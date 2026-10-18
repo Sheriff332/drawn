@@ -11,7 +11,7 @@ impl Element for Group {
         ExpandElement::Children({
             let mut out = std::mem::take(&mut self.elements);
             for element in &mut out {
-                *element.get_style() = self.style;
+                *element.get_style() = self.style.clone();
             }
             out
         })

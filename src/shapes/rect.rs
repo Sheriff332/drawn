@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 pub struct Rect {
     style: Style,
     pos: Option<Point>,
