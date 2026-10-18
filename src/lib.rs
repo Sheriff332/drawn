@@ -79,6 +79,32 @@ impl Style {
     }
 }
 
+pub trait Styled {
+    fn get_style(&mut self) -> &mut Style;
+
+    fn fill(mut self, color: Color) ->  Self where Self: Sized {
+        self.get_style().fill = color;
+        self
+    }
+    fn stroke(mut self, stroke: Color) ->  Self where Self: Sized {
+        self.get_style().stroke = stroke;
+        self
+    }
+    fn stroke_width(mut self, stroke_width: f32) ->  Self where Self: Sized {
+        self.get_style().stroke_width = stroke_width;
+        self
+    }
+    fn opacity(mut self, opacity: f32) ->  Self where Self: Sized {
+        self.get_style().opacity = opacity;
+        self
+    }
+}
+
+impl Styled for Style {
+    fn get_style(&mut self) -> &mut Style {self}
+}
+
+
 pub trait Element {
     fn expand(&self) -> ExpandElement;
 }
@@ -141,6 +167,10 @@ impl Element for Rect {
     }
 }
 
+impl Styled for Rect {
+    fn get_style(&mut self) -> &mut Style {&mut self.style}
+}
+
 pub struct Circle {
     pub style: Style,
     pub center: Point,
@@ -162,6 +192,13 @@ pub struct Color {
 }
 
 impl Color {
+    pub const BLACK: Color = Color { r: 0, g: 0, b: 0, a: 255 };
+    pub const WHITE: Color = Color { r: 255, g: 255, b: 255, a: 255 };
+    pub const TRANSPARENT: Color = Color { r: 0, g: 0, b: 0, a: 0 };
+    pub const RED: Color = Color { r: 255, g: 0, b: 0, a: 255 };
+    pub const GREEN: Color = Color { r: 0, g: 255, b: 0, a: 255 };
+    pub const BLUE: Color = Color { r: 0, g: 0, b: 255, a: 255 };
+
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b, a: 255 }
     }

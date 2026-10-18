@@ -2,10 +2,23 @@ use drawn::prelude::*;
 
 fn main() -> Result<(), std::io::Error> {
     let mut newsvg = Svg::new();
-    
-    let x = Rect::new()//something like this
+
+    let x = Rect::new()
         .size(16.0, 16.0)
-        .round(5.0, 5.0);
+        .round(5.0, 5.0)
+        .fill(Color::RED)
+        .opacity(50.0)
+        .stroke_width(0.5);
+
+    newsvg.add(
+        Rect::new()
+            .size(16.0, 16.0)
+            .round(5.0, 5.0)
+            .fill(Color::BLACK)
+            .opacity(50.0)
+            .stroke_width(0.5)
+            .at(100.0,100.0)
+    );
 
     newsvg.add(
         ThreeBeans {
