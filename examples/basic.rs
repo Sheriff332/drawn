@@ -39,7 +39,7 @@ fn main() -> Result<(), std::io::Error> {
         }
     );
 
-    newsvg.write_to_file("abcd.svg")?;
+    newsvg.write_to_file("examples/basic.svg")?;
     Ok(())
 }
 
