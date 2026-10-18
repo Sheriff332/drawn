@@ -1,10 +1,11 @@
+use std::fmt::{Display, Formatter};
 use std::io::Write;
 use std::{fs, io};
-use std::fmt::{Display, Formatter};
 
 pub mod group;
 pub mod shapes;
 
+#[derive(Default)]
 pub struct Svg {
     width: Option<f32>,
     height: Option<f32>,
@@ -12,16 +13,6 @@ pub struct Svg {
     elements: Vec<Box<dyn Element>>,
 }
 
-impl Default for Svg {
-    fn default() -> Self {
-        Self {
-            width: None,
-            height: None,
-            viewbox: None,
-            elements: Vec::new()
-        }
-    }
-}
 impl Svg {
     pub fn size(mut self, width: f32, height: f32) -> Self {
         self.width = Some(width);
@@ -37,8 +28,11 @@ impl Svg {
         let mut writer = io::BufWriter::new(fs::File::create(filename)?);
         write!(&mut writer, "<svg")?;
         if let Some(viewbox) = self.viewbox {
-            write!(&mut writer, r#" viewBox="{} {} {} {}""#,
-                   viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y)?;
+            write!(
+                &mut writer,
+                r#" viewBox="{} {} {} {}""#,
+                viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y
+            )?;
         }
         if let Some(width) = self.width {
             write!(&mut writer, r#" width="{}""#, width)?;
@@ -47,9 +41,9 @@ impl Svg {
             write!(&mut writer, r#" height="{}""#, height)?;
         }
         writeln!(&mut writer, r#" xmlns="http://www.w3.org/2000/svg">"#)?;
-        for mut element in &mut self.elements {
+        for element in &mut self.elements {
             let mut lines = Vec::new();
-            unroll(&mut element, &mut lines);
+            unroll(element, &mut lines);
             for line in lines {
                 writeln!(writer, "{}", line)?;
             }
@@ -59,7 +53,7 @@ impl Svg {
     }
 }
 
-fn unroll(element: &mut Box<dyn Element>, out:&mut Vec<String>) {
+fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>) {
     match element.expand() {
         ExpandElement::Children(vec) => {
             for mut element in vec {
@@ -72,36 +66,27 @@ fn unroll(element: &mut Box<dyn Element>, out:&mut Vec<String>) {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Style {
     fill: Option<Color>,
     stroke: Option<Color>,
     stroke_width: Option<f32>,
     opacity: Option<f32>,
 }
-impl Default for Style {
-    fn default() -> Self {
-        Self {
-            fill: None,
-            stroke: None,
-            stroke_width: None,
-            opacity: None,
-        }
-    }
-}
+
 impl Style {
     pub fn to_raw_svg<'a>(&self, expr: &'a mut String) -> &'a mut String {
         if let Some(fill) = self.fill {
-            *expr+=format!(r#" fill="{}""#, fill).as_str();
+            *expr += format!(r#" fill="{}""#, fill).as_str();
         }
         if let Some(stroke) = self.stroke {
-            *expr+=format!(r#" stroke="{}""#, stroke).as_str();
+            *expr += format!(r#" stroke="{}""#, stroke).as_str();
         }
         if let Some(stroke_width) = self.stroke_width {
-            *expr+=format!(r#" stroke-width="{}""#, stroke_width).as_str();
+            *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
         }
         if let Some(opacity) = self.opacity {
-            *expr+=format!(r#" opacity="{}""#, opacity).as_str();
+            *expr += format!(r#" opacity="{}""#, opacity).as_str();
         }
         expr
     }
@@ -109,28 +94,41 @@ impl Style {
 pub trait Styled {
     fn get_style(&mut self) -> &mut Style;
 
-    fn fill(mut self, color: Color) ->  Self where Self: Sized {
+    fn fill(mut self, color: Color) -> Self
+    where
+        Self: Sized,
+    {
         self.get_style().fill = Some(color);
         self
     }
-    fn stroke(mut self, stroke: Color) ->  Self where Self: Sized {
+    fn stroke(mut self, stroke: Color) -> Self
+    where
+        Self: Sized,
+    {
         self.get_style().stroke = Some(stroke);
         self
     }
-    fn stroke_width(mut self, stroke_width: f32) ->  Self where Self: Sized {
+    fn stroke_width(mut self, stroke_width: f32) -> Self
+    where
+        Self: Sized,
+    {
         self.get_style().stroke_width = Some(stroke_width);
         self
     }
-    fn opacity(mut self, opacity: f32) ->  Self where Self: Sized {
+    fn opacity(mut self, opacity: f32) -> Self
+    where
+        Self: Sized,
+    {
         self.get_style().opacity = Some(opacity);
         self
     }
 }
 
 impl Styled for Style {
-    fn get_style(&mut self) -> &mut Style {self}
+    fn get_style(&mut self) -> &mut Style {
+        self
+    }
 }
-
 
 pub trait Element: Styled {
     fn expand(&mut self) -> ExpandElement;
@@ -150,12 +148,42 @@ pub struct Color {
 }
 
 impl Color {
-    pub const BLACK: Color = Color { r: 0, g: 0, b: 0, a: 255 };
-    pub const WHITE: Color = Color { r: 255, g: 255, b: 255, a: 255 };
-    pub const TRANSPARENT: Color = Color { r: 0, g: 0, b: 0, a: 0 };
-    pub const RED: Color = Color { r: 255, g: 0, b: 0, a: 255 };
-    pub const GREEN: Color = Color { r: 0, g: 255, b: 0, a: 255 };
-    pub const BLUE: Color = Color { r: 0, g: 0, b: 255, a: 255 };
+    pub const BLACK: Color = Color {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    pub const WHITE: Color = Color {
+        r: 255,
+        g: 255,
+        b: 255,
+        a: 255,
+    };
+    pub const TRANSPARENT: Color = Color {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 0,
+    };
+    pub const RED: Color = Color {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    pub const GREEN: Color = Color {
+        r: 0,
+        g: 255,
+        b: 0,
+        a: 255,
+    };
+    pub const BLUE: Color = Color {
+        r: 0,
+        g: 0,
+        b: 255,
+        a: 255,
+    };
 
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b, a: 255 }

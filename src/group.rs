@@ -1,5 +1,6 @@
 use crate::*;
 
+#[derive(Default)]
 pub struct Group {
     style: Style,
     elements: Vec<Box<dyn Element>>,
@@ -17,17 +18,10 @@ impl Element for Group {
     }
 }
 
-impl Default for Group {
-    fn default() -> Self {
-        Self {
-            style: Style::default(),
-            elements: Vec::new(),
-        }
-    }
-}
-
 impl Styled for Group {
-    fn get_style(&mut self) -> &mut Style { &mut self.style }
+    fn get_style(&mut self) -> &mut Style {
+        &mut self.style
+    }
 }
 
 impl Group {
