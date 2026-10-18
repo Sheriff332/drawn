@@ -3,6 +3,7 @@ use crate::*;
 #[derive(Clone, Default)]
 pub struct Rect {
     id: Option<String>,
+    link: Option<Link>,
     style: Style,
     pos: Option<Point>,
     width: Option<f32>,
@@ -59,6 +60,15 @@ impl Element for Rect {
 
     fn set_id(mut self, id: &str) -> Self where Self: Sized {
         self.id = Some(id.to_string());
+        self
+    }
+
+    fn get_link(&self) -> Option<&Link> {
+        Option::from(&self.link)
+    }
+    
+    fn set_link(mut self, link: &str, new_tab: bool) -> Self where Self: Sized {
+        self.link = Some(Link::from(link, new_tab));
         self
     }
 }

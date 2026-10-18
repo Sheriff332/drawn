@@ -1,7 +1,8 @@
-use crate::{Element, ExpandElement, Point, Style, Styled};
+use crate::{Element, ExpandElement, Link, Point, Style, Styled};
 
 pub struct Path {
     id: Option<String>,
+    link: Option<Link>,
     style: Style,
     d: Vec<PathCommand>
 }
@@ -23,6 +24,15 @@ impl Element for Path {
 
     fn set_id(mut self, id: &str) -> Self where Self: Sized {
         self.id = Some(id.to_string());
+        self
+    }
+
+    fn get_link(&self) -> Option<&Link> {
+        Option::from(&self.link)
+    }
+
+    fn set_link(mut self, link: &str, new_tab: bool) -> Self where Self: Sized {
+        self.link = Some(Link::from(link, new_tab));
         self
     }
 }

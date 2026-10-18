@@ -3,6 +3,7 @@ use crate::*;
 #[derive(Default)]
 pub struct Group {
     id: Option<String>,
+    link: Option<Link>,
     style: Style,
     elements: Vec<Box<dyn Element>>,
 }
@@ -24,6 +25,15 @@ impl Element for Group {
 
     fn set_id(mut self, id: &str) -> Self where Self: Sized {
         self.id = Some(id.to_string());
+        self
+    }
+
+    fn get_link(&self) -> Option<&Link> {
+        Option::from(&self.link)
+    }
+
+    fn set_link(mut self, link: &str, new_tab: bool) -> Self where Self: Sized {
+        self.link = Some(Link::from(link, new_tab));
         self
     }
 }

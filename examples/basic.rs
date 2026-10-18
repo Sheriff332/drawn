@@ -25,16 +25,16 @@ fn main() -> Result<(), std::io::Error> {
             //.fill(Color::BLACK)
             .stroke_width(0.5)
             .at(100.0, 100.0)
-            .set_id("hi-there"),
+            .set_id("hi-there")
     );
 
     newsvg.add(Rect::default());
 
     newsvg.add(ThreeBeans {
-        bean1: x.clone().at(50.0, 50.0),
-        bean2: x.clone().at(100.0, 50.0),
+        bean1: x.clone().at(50.0, 50.0).set_link("/abc", true), //unrolls this!
+        bean2: x.clone().at(100.0, 50.0).set_id("hi-hi"),
         bean3: x.clone().at(150.0, 50.0),
-    });
+    }.set_link("def", false)); //ignores this!
 
     newsvg.write_to_file("examples/basic.svg")?;
     Ok(())

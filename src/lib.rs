@@ -44,10 +44,23 @@ impl Svg {
         }
         writeln!(&mut writer, r#" xmlns="http://www.w3.org/2000/svg">"#)?;
         for element in &mut self.elements {
+            let link_inside = unroll_link_check(element);
+            let linked = element.get_link().is_some() && !link_inside;
+            if linked {
+                writeln!(&mut writer, r#"<a href="{}"{}>"#,
+                element.get_link().unwrap().link,
+                if element.get_link().unwrap().new_tab {
+                    r#" target="_blank" rel="noopener""#
+                } else { "" }
+                )?;
+            }
             let mut lines = Vec::new();
-            unroll(element, &mut lines);
+            unroll(element, &mut lines, link_inside);
             for line in lines {
                 writeln!(writer, "{}", line)?;
+            }
+            if linked {
+                writeln!(&mut writer, "</a>")?;
             }
         }
         writeln!(writer, "</svg>")?;
@@ -55,17 +68,45 @@ impl Svg {
     }
 }
 
-fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>) {
+fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
+    let link_inside;
+    if check {
+        link_inside = unroll_link_check(element);
+        if element.get_link().is_some() && !link_inside {
+            out.push(format!(r#"<a href="{}"{}>"#,
+                             element.get_link().unwrap().link,
+                             if element.get_link().unwrap().new_tab {
+                                 r#" target="_blank" rel="noopener""#
+                             } else { "" }
+            ));
+        }
+    } else {
+        link_inside = false;
+    }
     match element.expand() {
         ExpandElement::Children(vec) => {
             for mut element in vec {
-                unroll(&mut element, out);
+                unroll(&mut element, out, link_inside);
             }
         }
         ExpandElement::RawSvg(str) => {
             out.push(str);
         }
     }
+    if element.get_link().is_some() && !link_inside {
+        out.push("</a>".to_string());
+    }
+}
+
+fn unroll_link_check(element: &mut Box<dyn Element>) -> bool {
+    if let ExpandElement::Children(vec) = element.expand() {
+        for mut element in vec {
+            if element.get_link().is_some() || unroll_link_check(&mut element) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 #[derive(Clone, Default)]
@@ -218,6 +259,10 @@ pub trait Element: Styled {
         None
     }
     fn set_id(self, _id: &str) -> Self where Self: Sized { self }
+    fn get_link(&self) -> Option<&Link> {
+        None
+    }
+    fn set_link(self, _link: &str, _new_tab: bool) -> Self where Self: Sized { self }
 }
 
 pub enum ExpandElement {
@@ -348,6 +393,18 @@ impl Display for LineJoin {
                 LineJoin::Bevel => "Bevel",
             }
         )
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct Link {
+    link: String,
+    new_tab: bool,
+}
+
+impl Link {
+    pub fn from(link: &str, new_tab: bool) -> Link {
+        Link { link: link.to_string(), new_tab }
     }
 }
 
