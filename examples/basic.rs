@@ -1,24 +1,27 @@
 use drawn::prelude::*;
 
 fn main() -> Result<(), std::io::Error> {
-    let mut newsvg = Svg::new();
+    let mut newsvg = Svg::default()
+        .size(1000.0, 1000.0);
 
-    let x = Rect::new()
+    let x = Rect::default()
         .size(16.0, 16.0)
         .round(5.0, 5.0)
         .fill(Color::RED)
-        .opacity(50.0)
-        .stroke_width(0.5);
+        .opacity(0.5)
+        //.stroke_width(0.5)
+    ;
 
     newsvg.add(
-        Rect::new()
+        Rect::default()
             .size(16.0, 16.0)
             .round(5.0, 5.0)
-            .fill(Color::BLACK)
-            .opacity(50.0)
+            //.fill(Color::BLACK)
             .stroke_width(0.5)
             .at(100.0,100.0)
     );
+
+    newsvg.add(Rect::default());
 
     newsvg.add(
         ThreeBeans {
@@ -38,7 +41,7 @@ struct ThreeBeans{
     bean3: Rect,
 }
 impl Element for ThreeBeans {
-    fn expand(&self) -> ExpandElement {
+    fn expand(&mut self) -> ExpandElement {
         ExpandElement::Children(
             vec![Box::new(self.bean1), Box::new(self.bean2), Box::new(self.bean3) ]
         )

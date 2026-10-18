@@ -3,24 +3,26 @@ use std::fs;
 use std::io::{self, Write};
 
 pub struct Svg {
-    width: f32,
-    height: f32,
-    viewbox: (Point, Point),
+    width: Option<f32>,
+    height: Option<f32>,
+    viewbox: Option<(Point, Point)>,
     elements: Vec<Box<dyn Element>>,
 }
 
-impl Svg {
-    pub fn new() -> Self {
+impl Default for Svg {
+    fn default() -> Self {
         Self {
-            width: 1000.0,
-            height: 1000.0,
-            viewbox: (Point::from(0.0, 0.0), Point::from(1000.0, 1000.0)),
+            width: None,
+            height: None,
+            viewbox: None,
             elements: Vec::new()
         }
     }
-    pub fn size(&mut self, width: f32, height: f32) -> &mut Self {
-        self.width = width;
-        self.height = height;
+}
+impl Svg {
+    pub fn size(mut self, width: f32, height: f32) -> Self {
+        self.width = Some(width);
+        self.height = Some(height);
         self
     }
     pub fn add<E: Element + 'static>(&mut self, element: E) -> &mut Self {
@@ -28,16 +30,23 @@ impl Svg {
         self
     }
 
-    pub fn write_to_file(&self, filename: &str) -> Result<(), io::Error> {
+    pub fn write_to_file(&mut self, filename: &str) -> Result<(), io::Error> {
         let mut writer = io::BufWriter::new(fs::File::create(filename)?);
-        writeln!(writer,
-                 r#"<svg viewBox="{} {} {} {}" width="{}" height="{}" xmlns="http://www.w3.org/2000/svg">"#,
-                 self.viewbox.0.x, self.viewbox.0.y, self.viewbox.1.x, self.viewbox.1.y,
-                 self.height, self.width
-        )?;
-        for element in &self.elements {
+        write!(&mut writer, "<svg")?;
+        if let Some(viewbox) = self.viewbox {
+            write!(&mut writer, r#" viewBox="{} {} {} {}""#,
+            viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y)?;
+        }
+        if let Some(width) = self.width {
+            write!(&mut writer, r#" width="{}""#, width)?;
+        }
+        if let Some(height) = self.height {
+            write!(&mut writer, r#" height="{}""#, height)?;
+        }
+        writeln!(&mut writer, r#" xmlns="http://www.w3.org/2000/svg">"#)?;
+        for mut element in &mut self.elements {
             let mut lines = Vec::new();
-            unroll(&element, &mut lines);
+            unroll(&mut element, &mut lines);
             for line in lines {
                 writeln!(writer, "{}", line)?;
             }
@@ -47,11 +56,11 @@ impl Svg {
     }
 }
 
-fn unroll(element: &Box<dyn Element>, out:&mut Vec<String>) {
+fn unroll(element: &mut Box<dyn Element>, out:&mut Vec<String>) {
     match element.expand() {
         ExpandElement::Children(vec) => {
-            for element in vec {
-                unroll(&element, out);
+            for mut element in vec {
+                unroll(&mut element, out);
             }
         }
         ExpandElement::RawSvg(str) => {
@@ -62,40 +71,55 @@ fn unroll(element: &Box<dyn Element>, out:&mut Vec<String>) {
 
 #[derive(Clone, Copy)]
 pub struct Style {
-    pub fill: Color,
-    pub stroke: Color,
-    pub stroke_width: f32,
-    pub opacity: f32,
+    fill: Option<Color>,
+    stroke: Option<Color>,
+    stroke_width: Option<f32>,
+    opacity: Option<f32>,
 }
-
-impl Style {
-    pub fn new() -> Self {
+impl Default for Style {
+    fn default() -> Self {
         Self {
-            fill: Color::rgba(0, 0, 0, 0),
-            stroke: Color::rgb(0, 0, 0),
-            stroke_width: 2.0,
-            opacity: 100.0,
+            fill: None,
+            stroke: None,
+            stroke_width: None,
+            opacity: None,
         }
     }
 }
-
+impl Style {
+    pub fn to_raw_svg<'a>(&self, expr: &'a mut String) -> &'a mut String {
+        if let Some(fill) = self.fill {
+            *expr+=format!(r#" fill="{}""#, fill).as_str();
+        }
+        if let Some(stroke) = self.stroke {
+            *expr+=format!(r#" stroke="{}""#, stroke).as_str();
+        }
+        if let Some(stroke_width) = self.stroke_width {
+            *expr+=format!(r#" stroke-width="{}""#, stroke_width).as_str();
+        }
+        if let Some(opacity) = self.opacity {
+            *expr+=format!(r#" opacity="{}""#, opacity).as_str();
+        }
+        expr
+    }
+}
 pub trait Styled {
     fn get_style(&mut self) -> &mut Style;
 
     fn fill(mut self, color: Color) ->  Self where Self: Sized {
-        self.get_style().fill = color;
+        self.get_style().fill = Some(color);
         self
     }
     fn stroke(mut self, stroke: Color) ->  Self where Self: Sized {
-        self.get_style().stroke = stroke;
+        self.get_style().stroke = Some(stroke);
         self
     }
     fn stroke_width(mut self, stroke_width: f32) ->  Self where Self: Sized {
-        self.get_style().stroke_width = stroke_width;
+        self.get_style().stroke_width = Some(stroke_width);
         self
     }
     fn opacity(mut self, opacity: f32) ->  Self where Self: Sized {
-        self.get_style().opacity = opacity;
+        self.get_style().opacity = Some(opacity);
         self
     }
 }
@@ -106,7 +130,7 @@ impl Styled for Style {
 
 
 pub trait Element {
-    fn expand(&self) -> ExpandElement;
+    fn expand(&mut self) -> ExpandElement;
 }
 
 pub enum ExpandElement {
@@ -114,6 +138,83 @@ pub enum ExpandElement {
     RawSvg(String),
 }
 
+#[derive(Clone, Copy)]
+pub struct Rect {
+    style: Style,
+    pos: Option<Point>,
+    width: Option<f32>,
+    height: Option<f32>,
+    rx: Option<f32>,
+    ry: Option<f32>,
+}
+impl Default for Rect {
+    fn default() -> Self {
+        Self {
+            style: Style::default(),
+            pos: None,
+            width: None,
+            height: None,
+            rx: None,
+            ry: None,
+        }
+    }
+}
+impl Rect {
+    pub fn at(mut self, x: f32, y: f32) -> Self {
+        self.pos = Some(Point::from(x, y));
+        self
+    }
+    pub fn size(mut self, width: f32, height: f32) -> Self {
+        self.width = Some(width);
+        self.height = Some(height);
+        self
+    }
+    pub fn round(mut self, rx: f32, ry: f32) -> Self {
+        self.rx = Some(rx);
+        self.ry = Some(ry);
+        self
+    }
+}
+impl Element for Rect {
+    fn expand(&mut self) -> ExpandElement {
+        let mut expr = r#"<rect"#.to_string();
+        if let Some(pos) = self.pos {
+            expr+=format!(r#" x="{}" y="{}""#, pos.x, pos.y).as_str();
+        }
+        if let Some(rx) = self.rx {
+            expr+=format!(r#" rx="{}""#, rx).as_str();
+        }
+        if let Some(ry) = self.ry {
+            expr+=format!(r#" ry="{}""#, ry).as_str();
+        }
+        if let Some(width) = self.width {
+            expr+=format!(r#" width="{}""#, width).as_str();
+        }
+        if let Some(height) = self.height {
+            expr+=format!(r#" height="{}""#, height).as_str();
+        }
+        self.style.to_raw_svg(&mut expr);
+        expr+=r#" />"#;
+        ExpandElement::RawSvg(expr)
+    }
+}
+
+impl Styled for Rect {
+    fn get_style(&mut self) -> &mut Style {&mut self.style}
+}
+
+// pub struct Circle {
+//     style: Style,
+//     center: Point,
+//     radius: f32,
+// }
+//
+// pub struct Line {
+//     style: Style,
+//     start: Point,
+//     end: Point,
+// }
+//
 // pub struct Text {
 //     pub style: Style,
 //     pub text: String,
@@ -123,72 +224,11 @@ pub enum ExpandElement {
 // }
 
 #[derive(Clone, Copy)]
-pub struct Rect {
-    pub style: Style,
-    pub pos: Point,
-    pub width: f32,
-    pub height: f32,
-    pub rx: f32,
-    pub ry: f32,
-}
-impl Rect {
-    pub fn new() -> Self {
-        Self {
-            style: Style::new(),
-            pos: Point::from(0.0,0.0),
-            width: 0.0,
-            height: 0.0,
-            rx: 0.0,
-            ry: 0.0,
-        }
-    }
-    pub fn at(mut self, x: f32, y: f32) -> Self {
-        self.pos = Point::from(x, y);
-        self
-    }
-    pub fn size(mut self, width: f32, height: f32) -> Self {
-        self.width = width;
-        self.height = height;
-        self
-    }
-    pub fn round(mut self, rx: f32, ry: f32) -> Self {
-        self.rx = rx;
-        self.ry = ry;
-        self
-    }
-}
-impl Element for Rect {
-    fn expand(&self) -> ExpandElement {
-        let expr =
-            format!(r#"<rect x="{}" y="{}" rx="{}" ry="{}" width="{}" height="{}" fill="{}" stroke = "{}" stroke-width = "{}" opacity = "{}%" />"#,
-            self.pos.x, self.pos.y, self.rx, self.ry, self.width, self.height,
-            self.style.fill, self.style.stroke, self.style.stroke_width, self.style.opacity);
-        ExpandElement::RawSvg(expr)
-    }
-}
-
-impl Styled for Rect {
-    fn get_style(&mut self) -> &mut Style {&mut self.style}
-}
-
-pub struct Circle {
-    pub style: Style,
-    pub center: Point,
-    pub radius: f32,
-}
-
-pub struct Line {
-    pub style: Style,
-    pub start: Point,
-    pub end: Point,
-}
-
-#[derive(Clone, Copy)]
 pub struct Color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-    pub a: u8,
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
 }
 
 impl Color {
