@@ -13,8 +13,8 @@ fn main() -> Result<(), std::io::Error> {
 
     let mut g = Group::default().opacity(1.0);
 
-    g.add(x.at(200.0, 200.0));
-    g.add(x.at(150.0, 200.0));
+    g.add(x.clone().at(200.0, 200.0));
+    g.add(x.clone().at(150.0, 200.0));
 
     newsvg.add(g);
 
@@ -30,9 +30,9 @@ fn main() -> Result<(), std::io::Error> {
     newsvg.add(Rect::default());
 
     newsvg.add(ThreeBeans {
-        bean1: x.at(50.0, 50.0),
-        bean2: x.at(100.0, 50.0),
-        bean3: x.at(150.0, 50.0),
+        bean1: x.clone().at(50.0, 50.0),
+        bean2: x.clone().at(100.0, 50.0),
+        bean3: x.clone().at(150.0, 50.0),
     });
 
     newsvg.write_to_file("examples/basic.svg")?;
@@ -54,9 +54,9 @@ impl Styled for ThreeBeans {
 impl Element for ThreeBeans {
     fn expand(&mut self) -> ExpandElement {
         ExpandElement::Children(vec![
-            Box::new(self.bean1),
-            Box::new(self.bean2),
-            Box::new(self.bean3),
+            Box::new(self.bean1.clone()),
+            Box::new(self.bean2.clone()),
+            Box::new(self.bean3.clone()),
         ])
     }
 }

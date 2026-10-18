@@ -66,28 +66,70 @@ fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>) {
     }
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 pub struct Style {
     fill: Option<Color>,
     stroke: Option<Color>,
     stroke_width: Option<f32>,
     opacity: Option<f32>,
+    stroke_dasharray: Vec<f32>,
+    stroke_linecap: Option<LineCap>,
+    stroke_linejoin: Option<LineJoin>,
+    fill_opacity: Option<f32>,
+    stroke_opacity: Option<f32>,
+}
+
+#[derive(PartialEq)]
+pub enum StyleTarget {
+    Rect,
 }
 
 impl Style {
-    pub fn to_raw_svg<'a>(&self, expr: &'a mut String) -> &'a mut String {
-        if let Some(fill) = self.fill {
+    pub fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
+        if ([StyleTarget::Rect].contains(&target)) && let Some(fill) = self.fill {
             *expr += format!(r#" fill="{}""#, fill).as_str();
         }
-        if let Some(stroke) = self.stroke {
+
+        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke) = self.stroke {
             *expr += format!(r#" stroke="{}""#, stroke).as_str();
         }
-        if let Some(stroke_width) = self.stroke_width {
+
+        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_width) = self.stroke_width {
             *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
         }
-        if let Some(opacity) = self.opacity {
+
+        if ([StyleTarget::Rect].contains(&target)) && let Some(opacity) = self.opacity {
             *expr += format!(r#" opacity="{}""#, opacity).as_str();
         }
+
+        if ([StyleTarget::Rect].contains(&target)) && !self.stroke_dasharray.is_empty() {
+            *expr += format!(
+                r#" stroke-dasharray="{}""#,
+                self.stroke_dasharray
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+            .as_str();
+        }
+
+        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_linecap) = &self.stroke_linecap {
+            *expr += format!(r#" stroke-linecap="{}""#, stroke_linecap).as_str();
+        }
+
+        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_linejoin) = &self.stroke_linejoin {
+            *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
+        }
+
+        if ([StyleTarget::Rect].contains(&target)) && let Some(fill_opacity) = self.fill_opacity {
+            *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
+        }
+
+        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_opacity) = self.stroke_opacity {
+            *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
+        }
+
         expr
     }
 }
@@ -120,6 +162,41 @@ pub trait Styled {
         Self: Sized,
     {
         self.get_style().opacity = Some(opacity);
+        self
+    }
+    fn stroke_dasharray(mut self, sd: Vec<f32>) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style().stroke_dasharray = sd;
+        self
+    }
+    fn stroke_linecap(mut self, lc: LineCap) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style().stroke_linecap = Some(lc);
+        self
+    }
+    fn stroke_linejoin(mut self, lj: LineJoin) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style().stroke_linejoin = Some(lj);
+        self
+    }
+    fn fill_opacity(mut self, fill_opacity: f32) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style().fill_opacity = Some(fill_opacity);
+        self
+    }
+    fn stroke_opacity(mut self, stroke_opacity: f32) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style().stroke_opacity = Some(stroke_opacity);
         self
     }
 }
@@ -222,6 +299,46 @@ pub struct Point {
 impl Point {
     pub fn from(x: f32, y: f32) -> Self {
         Self { x, y }
+    }
+}
+
+#[derive(Clone)]
+pub enum LineCap {
+    Butt,
+    Round,
+    Square,
+}
+impl Display for LineCap {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LineCap::Butt => "Butt",
+                LineCap::Round => "Round",
+                LineCap::Square => "Square",
+            }
+        )
+    }
+}
+
+#[derive(Clone)]
+pub enum LineJoin {
+    Miter,
+    Round,
+    Bevel,
+}
+impl Display for LineJoin {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LineJoin::Miter => "Miter",
+                LineJoin::Round => "Round",
+                LineJoin::Bevel => "Bevel",
+            }
+        )
     }
 }
 

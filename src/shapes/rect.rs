@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 pub struct Rect {
     style: Style,
     pos: Option<Point>,
@@ -44,7 +44,7 @@ impl Element for Rect {
         if let Some(height) = self.height {
             expr += format!(r#" height="{}""#, height).as_str();
         }
-        self.style.to_raw_svg(&mut expr);
+        self.style.to_raw_svg(&mut expr, StyleTarget::Rect);
         expr += r#" />"#;
         ExpandElement::RawSvg(expr)
     }
