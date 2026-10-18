@@ -1,6 +1,9 @@
+use std::io::Write;
+use std::{fs, io};
 use std::fmt::{Display, Formatter};
-use std::fs;
-use std::io::{self, Write};
+
+pub mod group;
+pub mod shapes;
 
 pub struct Svg {
     width: Option<f32>,
@@ -35,7 +38,7 @@ impl Svg {
         write!(&mut writer, "<svg")?;
         if let Some(viewbox) = self.viewbox {
             write!(&mut writer, r#" viewBox="{} {} {} {}""#,
-            viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y)?;
+                   viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y)?;
         }
         if let Some(width) = self.width {
             write!(&mut writer, r#" width="{}""#, width)?;
@@ -138,128 +141,6 @@ pub enum ExpandElement {
     RawSvg(String),
 }
 
-pub struct Group {
-    style: Style,
-    elements: Vec<Box<dyn Element>>,
-}
-
-impl Element for Group {
-    fn expand(&mut self) -> ExpandElement {
-        ExpandElement::Children({
-            let mut out = std::mem::take(&mut self.elements);
-            for element in &mut out {
-                *element.get_style() = self.style;
-            }
-            out
-        })
-    }
-}
-
-impl Default for Group {
-    fn default() -> Self {
-        Self {
-            style: Style::default(),
-            elements: Vec::new(),
-        }
-    }
-}
-
-impl Styled for Group {
-    fn get_style(&mut self) -> &mut Style { &mut self.style }
-}
-
-impl Group {
-    pub fn add<E: Element + 'static>(&mut self, element: E) -> &mut Self {
-        self.elements.push(Box::new(element));
-        self
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct Rect {
-    style: Style,
-    pos: Option<Point>,
-    width: Option<f32>,
-    height: Option<f32>,
-    rx: Option<f32>,
-    ry: Option<f32>,
-}
-impl Default for Rect {
-    fn default() -> Self {
-        Self {
-            style: Style::default(),
-            pos: None,
-            width: None,
-            height: None,
-            rx: None,
-            ry: None,
-        }
-    }
-}
-impl Rect {
-    pub fn at(mut self, x: f32, y: f32) -> Self {
-        self.pos = Some(Point::from(x, y));
-        self
-    }
-    pub fn size(mut self, width: f32, height: f32) -> Self {
-        self.width = Some(width);
-        self.height = Some(height);
-        self
-    }
-    pub fn round(mut self, rx: f32, ry: f32) -> Self {
-        self.rx = Some(rx);
-        self.ry = Some(ry);
-        self
-    }
-}
-impl Element for Rect {
-    fn expand(&mut self) -> ExpandElement {
-        let mut expr = r#"<rect"#.to_string();
-        if let Some(pos) = self.pos {
-            expr+=format!(r#" x="{}" y="{}""#, pos.x, pos.y).as_str();
-        }
-        if let Some(rx) = self.rx {
-            expr+=format!(r#" rx="{}""#, rx).as_str();
-        }
-        if let Some(ry) = self.ry {
-            expr+=format!(r#" ry="{}""#, ry).as_str();
-        }
-        if let Some(width) = self.width {
-            expr+=format!(r#" width="{}""#, width).as_str();
-        }
-        if let Some(height) = self.height {
-            expr+=format!(r#" height="{}""#, height).as_str();
-        }
-        self.style.to_raw_svg(&mut expr);
-        expr+=r#" />"#;
-        ExpandElement::RawSvg(expr)
-    }
-}
-
-impl Styled for Rect {
-    fn get_style(&mut self) -> &mut Style {&mut self.style}
-}
-
-// pub struct Circle {
-//     style: Style,
-//     center: Point,
-//     radius: f32,
-// }
-//
-// pub struct Line {
-//     style: Style,
-//     start: Point,
-//     end: Point,
-// }
-//
-// pub struct Text {
-//     pub style: Style,
-//     pub text: String,
-//     pub font: Option<String>,
-//     pub font_size: f32,
-//     pub text_anchor: String,//might add enum
-// }
-
 #[derive(Clone, Copy)]
 pub struct Color {
     r: u8,
@@ -318,4 +199,6 @@ impl Point {
 
 pub mod prelude {
     pub use crate::*;
+    pub use group::*;
+    pub use shapes::rect::*;
 }
