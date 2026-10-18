@@ -2,6 +2,7 @@ use crate::*;
 
 #[derive(Default)]
 pub struct Group {
+    id: Option<String>,
     style: Style,
     elements: Vec<Box<dyn Element>>,
 }
@@ -15,6 +16,15 @@ impl Element for Group {
             }
             out
         })
+    }
+
+    fn get_id(&self) -> Option<&str> {
+        self.id.as_deref()
+    }
+
+    fn set_id(mut self, id: &str) -> Self where Self: Sized {
+        self.id = Some(id.to_string());
+        self
     }
 }
 

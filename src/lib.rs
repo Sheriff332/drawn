@@ -4,6 +4,8 @@ use std::{fs, io};
 
 pub mod group;
 pub mod shapes;
+mod text;
+mod path;
 
 #[derive(Default)]
 pub struct Svg {
@@ -212,6 +214,10 @@ impl Styled for Style {
 
 pub trait Element: Styled {
     fn expand(&mut self) -> ExpandElement;
+    fn get_id(&self) -> Option<&str> {
+        None
+    }
+    fn set_id(self, _id: &str) -> Self where Self: Sized { self }
 }
 
 pub enum ExpandElement {

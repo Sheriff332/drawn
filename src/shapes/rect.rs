@@ -2,6 +2,7 @@ use crate::*;
 
 #[derive(Clone, Default)]
 pub struct Rect {
+    id: Option<String>,
     style: Style,
     pos: Option<Point>,
     width: Option<f32>,
@@ -29,6 +30,9 @@ impl Rect {
 impl Element for Rect {
     fn expand(&mut self) -> ExpandElement {
         let mut expr = r#"<rect"#.to_string();
+        if let Some(id) = &self.id {
+            expr += format!(r#" id="{}""#, id).as_str();
+        }
         if let Some(pos) = self.pos {
             expr += format!(r#" x="{}" y="{}""#, pos.x, pos.y).as_str();
         }
@@ -47,6 +51,15 @@ impl Element for Rect {
         self.style.to_raw_svg(&mut expr, StyleTarget::All);
         expr += r#" />"#;
         ExpandElement::RawSvg(expr)
+    }
+
+    fn get_id(&self) -> Option<&str> {
+        self.id.as_deref()
+    }
+
+    fn set_id(mut self, id: &str) -> Self where Self: Sized {
+        self.id = Some(id.to_string());
+        self
     }
 }
 

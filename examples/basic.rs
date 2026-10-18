@@ -24,7 +24,8 @@ fn main() -> Result<(), std::io::Error> {
             .round(5.0, 5.0)
             //.fill(Color::BLACK)
             .stroke_width(0.5)
-            .at(100.0, 100.0),
+            .at(100.0, 100.0)
+            .set_id("hi-there"),
     );
 
     newsvg.add(Rect::default());
