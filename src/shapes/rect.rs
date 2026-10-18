@@ -44,7 +44,7 @@ impl Element for Rect {
         if let Some(height) = self.height {
             expr += format!(r#" height="{}""#, height).as_str();
         }
-        self.style.to_raw_svg(&mut expr, StyleTarget::Rect);
+        self.style.to_raw_svg(&mut expr, StyleTarget::All);
         expr += r#" />"#;
         ExpandElement::RawSvg(expr)
     }

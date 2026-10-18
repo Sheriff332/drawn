@@ -81,28 +81,31 @@ pub struct Style {
 
 #[derive(PartialEq)]
 pub enum StyleTarget {
-    Rect,
+    All,
+    Image,
+    Line,
+    Ellipse,
 }
 
 impl Style {
     pub fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
-        if ([StyleTarget::Rect].contains(&target)) && let Some(fill) = self.fill {
+        if (![StyleTarget::Image, StyleTarget::Line].contains(&target)) && let Some(fill) = self.fill {
             *expr += format!(r#" fill="{}""#, fill).as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke) = self.stroke {
+        if (![StyleTarget::Image].contains(&target)) && let Some(stroke) = self.stroke {
             *expr += format!(r#" stroke="{}""#, stroke).as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_width) = self.stroke_width {
+        if (![StyleTarget::Image].contains(&target)) && let Some(stroke_width) = self.stroke_width {
             *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && let Some(opacity) = self.opacity {
+        if let Some(opacity) = self.opacity {
             *expr += format!(r#" opacity="{}""#, opacity).as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && !self.stroke_dasharray.is_empty() {
+        if (![StyleTarget::Image].contains(&target)) && !self.stroke_dasharray.is_empty() {
             *expr += format!(
                 r#" stroke-dasharray="{}""#,
                 self.stroke_dasharray
@@ -114,19 +117,19 @@ impl Style {
             .as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_linecap) = &self.stroke_linecap {
+        if (![StyleTarget::Image].contains(&target)) && let Some(stroke_linecap) = &self.stroke_linecap {
             *expr += format!(r#" stroke-linecap="{}""#, stroke_linecap).as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_linejoin) = &self.stroke_linejoin {
+        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Ellipse].contains(&target)) && let Some(stroke_linejoin) = &self.stroke_linejoin {
             *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && let Some(fill_opacity) = self.fill_opacity {
+        if (![StyleTarget::Image, StyleTarget::Line].contains(&target)) && let Some(fill_opacity) = self.fill_opacity {
             *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
         }
 
-        if ([StyleTarget::Rect].contains(&target)) && let Some(stroke_opacity) = self.stroke_opacity {
+        if (![StyleTarget::Image].contains(&target)) && let Some(stroke_opacity) = self.stroke_opacity {
             *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
         }
 
