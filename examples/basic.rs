@@ -12,6 +12,14 @@ fn main() -> Result<(), std::io::Error> {
         //.stroke_width(0.5)
     ;
 
+    let mut g = Group::default()
+        .opacity(1.0);
+
+    g.add(x.at(200.0,200.0));
+    g.add(x.at(150.0,200.0));
+
+    newsvg.add(g);
+
     newsvg.add(
         Rect::default()
             .size(16.0, 16.0)
@@ -40,6 +48,13 @@ struct ThreeBeans{
     bean2: Rect,
     bean3: Rect,
 }
+
+impl Styled for ThreeBeans {
+    fn get_style(&mut self) -> &mut Style {
+        unimplemented!()
+    }
+}
+
 impl Element for ThreeBeans {
     fn expand(&mut self) -> ExpandElement {
         ExpandElement::Children(
