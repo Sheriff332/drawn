@@ -44,7 +44,9 @@ impl Svg {
         }
         writeln!(&mut writer, r#" xmlns="http://www.w3.org/2000/svg">"#)?;
         for element in &mut self.elements {
-            let link_inside = unroll_link_check(element);
+            let clip = element.get_clip() && element.get_id().is_some();
+            if clip { unroll_and_erase(element); }
+            let link_inside = if clip { false } else { unroll_link_check(element) };
             let linked = element.get_link().is_some() && !link_inside;
             if linked {
                 writeln!(&mut writer, r#"<a href="{}"{}>"#,
@@ -54,10 +56,18 @@ impl Svg {
                 } else { "" }
                 )?;
             }
+            if clip && let Some(id) = element.get_id() {
+                writeln!(&mut writer, "<defs>")?;
+                writeln!(&mut writer, r#"<clipPath id="{}">"#, id)?;
+            }
             let mut lines = Vec::new();
             unroll(element, &mut lines, link_inside);
             for line in lines {
                 writeln!(writer, "{}", line)?;
+            }
+            if clip {
+                writeln!(&mut writer, "</clipPath>")?;
+                writeln!(&mut writer, "</defs>")?;
             }
             if linked {
                 writeln!(&mut writer, "</a>")?;
@@ -107,6 +117,18 @@ fn unroll_link_check(element: &mut Box<dyn Element>) -> bool {
         }
     }
     false
+}
+
+fn unroll_and_erase(element: &mut Box<dyn Element>) {
+    if let ExpandElement::Children(vec) = element.expand() {
+        for mut element in vec {
+            *element.get_style_mut() = Style::default();
+            element.remove_id();
+            element.remove_link();
+            element.remove_clip();
+            unroll_and_erase(&mut element);
+        }
+    }
 }
 
 #[derive(Clone, Default)]
@@ -180,75 +202,75 @@ impl Style {
     }
 }
 pub trait Styled {
-    fn get_style(&mut self) -> &mut Style;
+    fn get_style_mut(&mut self) -> &mut Style;
 
     fn fill(mut self, color: Color) -> Self
     where
         Self: Sized,
     {
-        self.get_style().fill = Some(color);
+        self.get_style_mut().fill = Some(color);
         self
     }
     fn stroke(mut self, stroke: Color) -> Self
     where
         Self: Sized,
     {
-        self.get_style().stroke = Some(stroke);
+        self.get_style_mut().stroke = Some(stroke);
         self
     }
     fn stroke_width(mut self, stroke_width: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style().stroke_width = Some(stroke_width);
+        self.get_style_mut().stroke_width = Some(stroke_width);
         self
     }
     fn opacity(mut self, opacity: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style().opacity = Some(opacity);
+        self.get_style_mut().opacity = Some(opacity);
         self
     }
     fn stroke_dasharray(mut self, sd: Vec<f32>) -> Self
     where
         Self: Sized,
     {
-        self.get_style().stroke_dasharray = sd;
+        self.get_style_mut().stroke_dasharray = sd;
         self
     }
     fn stroke_linecap(mut self, lc: LineCap) -> Self
     where
         Self: Sized,
     {
-        self.get_style().stroke_linecap = Some(lc);
+        self.get_style_mut().stroke_linecap = Some(lc);
         self
     }
     fn stroke_linejoin(mut self, lj: LineJoin) -> Self
     where
         Self: Sized,
     {
-        self.get_style().stroke_linejoin = Some(lj);
+        self.get_style_mut().stroke_linejoin = Some(lj);
         self
     }
     fn fill_opacity(mut self, fill_opacity: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style().fill_opacity = Some(fill_opacity);
+        self.get_style_mut().fill_opacity = Some(fill_opacity);
         self
     }
     fn stroke_opacity(mut self, stroke_opacity: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style().stroke_opacity = Some(stroke_opacity);
+        self.get_style_mut().stroke_opacity = Some(stroke_opacity);
         self
     }
 }
 
 impl Styled for Style {
-    fn get_style(&mut self) -> &mut Style {
+    fn get_style_mut(&mut self) -> &mut Style {
         self
     }
 }
@@ -258,11 +280,17 @@ pub trait Element: Styled {
     fn get_id(&self) -> Option<&str> {
         None
     }
-    fn set_id(self, _id: &str) -> Self where Self: Sized { self }
+    fn id(self, _id: &str) -> Self where Self: Sized { self }
+    fn remove_id(&mut self) {}
     fn get_link(&self) -> Option<&Link> {
         None
     }
-    fn set_link(self, _link: &str, _new_tab: bool) -> Self where Self: Sized { self }
+    fn link(self, _link: &str, _new_tab: bool) -> Self where Self: Sized { self }
+    fn remove_link(&mut self) {}
+    fn get_clip(&self) -> bool { false }
+    fn clip(self) -> Self where Self: Sized { self }
+    fn remove_clip(&mut self) {}
+    fn clip_path(self, _element: &dyn Element) -> Self where Self: Sized { self }
 }
 
 pub enum ExpandElement {

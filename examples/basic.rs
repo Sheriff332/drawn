@@ -25,16 +25,32 @@ fn main() -> Result<(), std::io::Error> {
             //.fill(Color::BLACK)
             .stroke_width(0.5)
             .at(100.0, 100.0)
-            .set_id("hi-there")
+            .id("hi-there")
     );
 
     newsvg.add(Rect::default());
 
     newsvg.add(ThreeBeans {
-        bean1: x.clone().at(50.0, 50.0).set_link("/abc", true), //unrolls this!
-        bean2: x.clone().at(100.0, 50.0).set_id("hi-hi"),
+        bean1: x.clone().at(50.0, 50.0).link("/abc", true), //unrolls this!
+        bean2: x.clone().at(100.0, 50.0).id("hi-hi"),
         bean3: x.clone().at(150.0, 50.0),
-    }.set_link("def", false)); //ignores this!
+    }.link("def", false)); //ignores this!
+
+    let clip=Rect::default()
+        .at(300.0, 300.0)
+        .size(16.0, 16.0)
+        .id("clip")
+        .clip();
+
+    let test = Rect::default()
+        .at(300.0,300.0)
+        .size(100.0,100.0)
+        .fill(Color::GREEN)
+        .clip_path(&clip);
+
+    newsvg.add(clip);
+
+    newsvg.add(test);
 
     newsvg.write_to_file("examples/basic.svg")?;
     Ok(())
@@ -47,7 +63,7 @@ struct ThreeBeans {
 }
 
 impl Styled for ThreeBeans {
-    fn get_style(&mut self) -> &mut Style {
+    fn get_style_mut(&mut self) -> &mut Style {
         unimplemented!()
     }
 }

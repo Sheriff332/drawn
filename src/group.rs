@@ -4,6 +4,8 @@ use crate::*;
 pub struct Group {
     id: Option<String>,
     link: Option<Link>,
+    clip: bool,
+    clip_path: Option<String>,
     style: Style,
     elements: Vec<Box<dyn Element>>,
 }
@@ -13,7 +15,7 @@ impl Element for Group {
         ExpandElement::Children({
             let mut out = std::mem::take(&mut self.elements);
             for element in &mut out {
-                *element.get_style() = self.style.clone();
+                *element.get_style_mut() = self.style.clone();
             }
             out
         })
@@ -23,23 +25,49 @@ impl Element for Group {
         self.id.as_deref()
     }
 
-    fn set_id(mut self, id: &str) -> Self where Self: Sized {
-        self.id = Some(id.to_string());
+    fn id(mut self, _id: &str) -> Self where Self: Sized {
+        self.id = Some(_id.to_string());
         self
+    }
+
+    fn remove_id(&mut self) {
+        self.id = None;
     }
 
     fn get_link(&self) -> Option<&Link> {
         Option::from(&self.link)
     }
 
-    fn set_link(mut self, link: &str, new_tab: bool) -> Self where Self: Sized {
-        self.link = Some(Link::from(link, new_tab));
+    fn link(mut self, _link: &str, _new_tab: bool) -> Self where Self: Sized {
+        self.link = Some(Link::from(_link, _new_tab));
+        self
+    }
+
+    fn remove_link(&mut self) {
+        self.link = None;
+    }
+
+    fn get_clip(&self) -> bool { self.clip }
+
+    fn clip(mut self) -> Self {
+        self.clip = true;
+        self
+    }
+
+    fn remove_clip(&mut self) {
+        self.clip = false;
+    }
+
+    fn clip_path(mut self, element: &dyn Element) -> Self where Self: Sized {
+        if let Some(id) = element.get_id() {
+            self.clip_path = Some(id.to_string());
+        }
         self
     }
 }
 
 impl Styled for Group {
-    fn get_style(&mut self) -> &mut Style {
+    fn get_style_mut(&mut self) -> &mut Style {
         &mut self.style
     }
 }
