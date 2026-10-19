@@ -6,6 +6,7 @@ pub struct Rect {
     link: Option<Link>,
     clip: bool,
     clip_path: Option<String>,
+    transforms: Vec<Transform>,
     style: Style,
     pos: Option<Point>,
     width: Option<f32>,
@@ -55,6 +56,13 @@ impl Element for Rect {
         }
         if let Some(clip_path) = &self.clip_path {
             expr += format!(r#" clip-path="url(#{})""#, clip_path).as_str();
+        }
+        if !self.transforms.is_empty() {
+            expr += r#" transform=""#;
+            for t in &self.transforms {
+                expr += format!(r#"{} "#, t).as_str();
+            }
+            expr+= r#"""#;
         }
         self.style.to_raw_svg(&mut expr, StyleTarget::All);
         expr += r#" />"#;
@@ -114,6 +122,19 @@ impl Element for Rect {
             self.clip_path = Some(id.to_string());
         }
         self
+    }
+
+    fn get_transforms(&self) -> &[Transform] {
+        &self.transforms
+    }
+
+    fn transform(mut self, transform: Transform) -> Self {
+        self.transforms.push(transform);
+        self
+    }
+
+    fn remove_transforms(&mut self) {
+        self.transforms = Vec::new();
     }
 }
 

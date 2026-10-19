@@ -1,10 +1,11 @@
-use crate::{Element, ExpandElement, Link, Style, Styled};
+use crate::{Element, ExpandElement, Link, Style, Styled, Transform};
 
 pub struct Text {
     id: Option<String>,
     link: Option<Link>,
     clip: bool,
     clip_path: Option<String>,
+    transforms: Vec<Transform>,
     style: Style,
     texts: Vec<TextSpan>,
 }
@@ -73,6 +74,19 @@ impl Element for Text {
             self.clip_path = Some(id.to_string());
         }
         self
+    }
+
+    fn get_transforms(&self) -> &[Transform] {
+        &self.transforms
+    }
+    
+    fn transform(mut self, transform: Transform) -> Self {
+        self.transforms.push(transform);
+        self
+    }
+
+    fn remove_transforms(&mut self) {
+        self.transforms = Vec::new();
     }
 }
 

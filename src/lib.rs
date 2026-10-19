@@ -440,6 +440,13 @@ pub trait Element: Styled {
     {
         self
     }
+    fn get_transforms(&self) -> &[Transform] {
+       &[]
+    }
+    fn transform(self, _transform: Transform) -> Self where Self: Sized {
+        self
+    }
+    fn remove_transforms(&mut self) {}
 }
 
 pub enum ExpandElement {
@@ -585,6 +592,32 @@ impl Link {
             link: link.to_string(),
             new_tab,
         }
+    }
+}
+
+#[derive(Clone)]
+pub enum Transform {
+    Translate(Point),
+    Scale(f32),
+    SkewX(f32),
+    SkewY(f32),
+    Rotate(f32),
+    Matrix([f32; 6]),
+}
+impl Display for Transform {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}",
+            match self {
+                Transform::Translate(pt) => format!( "translate({}, {})", pt.x, pt.y),
+                Transform::Scale(v) => format!( "scale({})", v),
+                Transform::SkewX(v) => format!( "skewX({})", v),
+                Transform::SkewY(v) => format!( "skewY({})", v),
+                Transform::Rotate(v) => format!( "rotate({})", v),
+                Transform::Matrix(m) =>
+                    format!( "matrix({},{},{},{},{},{})", m[0], m[1], m[2], m[3], m[4], m[5]),
+            }
+        )?;
+        Ok(())
     }
 }
 

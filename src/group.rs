@@ -6,6 +6,7 @@ pub struct Group {
     link: Option<Link>,
     clip: bool,
     clip_path: Option<String>,
+    transforms: Vec<Transform>,
     style: Style,
     elements: Vec<Box<dyn Element>>,
 }
@@ -74,6 +75,19 @@ impl Element for Group {
             self.clip_path = Some(id.to_string());
         }
         self
+    }
+
+    fn get_transforms(&self) -> &[Transform] {
+        &self.transforms
+    }
+
+    fn transform(mut self, transform: Transform) -> Self {
+        self.transforms.push(transform);
+        self
+    }
+
+    fn remove_transforms(&mut self) {
+        self.transforms = Vec::new();
     }
 }
 
