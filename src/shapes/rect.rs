@@ -2,12 +2,7 @@ use crate::*;
 
 #[derive(Clone, Default)]
 pub struct Rect {
-    id: Option<String>,
-    link: Option<Link>,
-    clip: bool,
-    clip_path: Option<String>,
-    transforms: Vec<Transform>,
-    style: Style,
+    properties: Properties,
     pos: Option<Point>,
     width: Option<f32>,
     height: Option<f32>,
@@ -34,8 +29,8 @@ impl Rect {
 impl Element for Rect {
     fn expand(&mut self) -> ExpandElement {
         let mut expr = r#"<rect"#.to_string();
-        if !self.clip
-            && let Some(id) = &self.id
+        if !self.properties.clip
+            && let Some(id) = &self.properties.id
         {
             expr += format!(r#" id="{}""#, id).as_str();
         }
@@ -54,92 +49,22 @@ impl Element for Rect {
         if let Some(height) = self.height {
             expr += format!(r#" height="{}""#, height).as_str();
         }
-        if let Some(clip_path) = &self.clip_path {
+        if let Some(clip_path) = &self.properties.clip_path {
             expr += format!(r#" clip-path="url(#{})""#, clip_path).as_str();
         }
-        if !self.transforms.is_empty() {
+        if !self.properties.transforms.is_empty() {
             expr += r#" transform=""#;
-            for t in &self.transforms {
+            for t in &self.properties.transforms {
                 expr += format!(r#"{} "#, t).as_str();
             }
-            expr+= r#"""#;
+            expr += r#"""#;
         }
-        self.style.to_raw_svg(&mut expr, StyleTarget::All);
+        self.properties
+            .style
+            .to_raw_svg(&mut expr, StyleTarget::All);
         expr += r#" />"#;
         ExpandElement::RawSvg(expr)
     }
-
-    fn get_id(&self) -> Option<&str> {
-        self.id.as_deref()
-    }
-
-    fn id(mut self, _id: &str) -> Self
-    where
-        Self: Sized,
-    {
-        self.id = Some(_id.to_string());
-        self
-    }
-
-    fn remove_id(&mut self) {
-        self.id = None;
-    }
-
-    fn get_link(&self) -> Option<&Link> {
-        Option::from(&self.link)
-    }
-
-    fn link(mut self, _link: &str, _new_tab: bool) -> Self
-    where
-        Self: Sized,
-    {
-        self.link = Some(Link::from(_link, _new_tab));
-        self
-    }
-
-    fn remove_link(&mut self) {
-        self.link = None;
-    }
-
-    fn get_clip(&self) -> bool {
-        self.clip
-    }
-
-    fn clip(mut self) -> Self {
-        self.clip = true;
-        self
-    }
-
-    fn remove_clip(&mut self) {
-        self.clip = false;
-    }
-
-    fn clip_path(mut self, element: &dyn Element) -> Self
-    where
-        Self: Sized,
-    {
-        if let Some(id) = element.get_id() {
-            self.clip_path = Some(id.to_string());
-        }
-        self
-    }
-
-    fn get_transforms(&self) -> &[Transform] {
-        &self.transforms
-    }
-
-    fn transform(mut self, transform: Transform) -> Self {
-        self.transforms.push(transform);
-        self
-    }
-
-    fn remove_transforms(&mut self) {
-        self.transforms = Vec::new();
-    }
 }
 
-impl Styled for Rect {
-    fn get_style_mut(&mut self) -> &mut Style {
-        &mut self.style
-    }
-}
+impl_properties!(Rect);

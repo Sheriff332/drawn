@@ -58,15 +58,15 @@ fn main() -> Result<(), std::io::Error> {
 
     newsvg.add(
         Rect::default()
-        .at(300.0, 400.0)
-        .size(50.0, 50.0)
-        .transform(Transform::Rotate(10.0))
-        .transform(Transform::Translate(Point::from(50.0,50.0)))
-        .transform(Transform::Scale(0.9))
-        .transform(Transform::Scale(1.1))
-        .transform(Transform::SkewX(10.0))
-        .transform(Transform::SkewY(10.0))
-        .transform(Transform::Matrix([1.0,1.0,1.0,1.0,1.0,1.0])),
+            .at(300.0, 400.0)
+            .size(50.0, 50.0)
+            .transform(Transform::Rotate(10.0))
+            .transform(Transform::Translate(Point::from(50.0, 50.0)))
+            .transform(Transform::Scale(0.9))
+            .transform(Transform::Scale(1.1))
+            .transform(Transform::SkewX(10.0))
+            .transform(Transform::SkewY(10.0))
+            .transform(Transform::Matrix([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])),
     );
 
     newsvg.write_to_file("examples/basic.svg")?;
@@ -80,7 +80,7 @@ struct ThreeBeans {
     bean3: Rect,
 }
 
-impl Styled for ThreeBeans {
+impl ImplProperties for ThreeBeans {
     fn get_style_mut(&mut self) -> &mut Style {
         &mut self.style
     }

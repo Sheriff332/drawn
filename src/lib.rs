@@ -1,11 +1,13 @@
-use std::fmt::{Display, Formatter};
-use std::io::Write;
-use std::{fs, io};
-
+#[macro_use]
+mod macros;
 pub mod group;
 mod path;
 pub mod shapes;
 mod text;
+
+use std::fmt::{Display, Formatter};
+use std::io::Write;
+use std::{fs, io};
 
 #[derive(Default)]
 pub struct Svg {
@@ -259,7 +261,18 @@ impl Style {
         };
     }
 }
-pub trait Styled {
+
+#[derive(Clone, Default)]
+pub struct Properties {
+    id: Option<String>,
+    link: Option<Link>,
+    clip: bool,
+    clip_path: Option<String>,
+    transforms: Vec<Transform>,
+    style: Style,
+}
+
+pub trait ImplProperties {
     fn get_style_mut(&mut self) -> &mut Style;
     fn remove_style(mut self) -> Self
     where
@@ -394,16 +407,6 @@ pub trait Styled {
         self.get_style_mut().stroke_opacity = None;
         self
     }
-}
-
-impl Styled for Style {
-    fn get_style_mut(&mut self) -> &mut Style {
-        self
-    }
-}
-
-pub trait Element: Styled {
-    fn expand(&mut self) -> ExpandElement;
     fn get_id(&self) -> Option<&str> {
         None
     }
@@ -441,12 +444,25 @@ pub trait Element: Styled {
         self
     }
     fn get_transforms(&self) -> &[Transform] {
-       &[]
+        &[]
     }
-    fn transform(self, _transform: Transform) -> Self where Self: Sized {
+    fn transform(self, _transform: Transform) -> Self
+    where
+        Self: Sized,
+    {
         self
     }
     fn remove_transforms(&mut self) {}
+}
+
+impl ImplProperties for Style {
+    fn get_style_mut(&mut self) -> &mut Style {
+        self
+    }
+}
+
+pub trait Element: ImplProperties {
+    fn expand(&mut self) -> ExpandElement;
 }
 
 pub enum ExpandElement {
@@ -606,15 +622,19 @@ pub enum Transform {
 }
 impl Display for Transform {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}",
+        write!(
+            f,
+            "{}",
             match self {
-                Transform::Translate(pt) => format!( "translate({}, {})", pt.x, pt.y),
-                Transform::Scale(v) => format!( "scale({})", v),
-                Transform::SkewX(v) => format!( "skewX({})", v),
-                Transform::SkewY(v) => format!( "skewY({})", v),
-                Transform::Rotate(v) => format!( "rotate({})", v),
-                Transform::Matrix(m) =>
-                    format!( "matrix({},{},{},{},{},{})", m[0], m[1], m[2], m[3], m[4], m[5]),
+                Transform::Translate(pt) => format!("translate({}, {})", pt.x, pt.y),
+                Transform::Scale(v) => format!("scale({})", v),
+                Transform::SkewX(v) => format!("skewX({})", v),
+                Transform::SkewY(v) => format!("skewY({})", v),
+                Transform::Rotate(v) => format!("rotate({})", v),
+                Transform::Matrix(m) => format!(
+                    "matrix({},{},{},{},{},{})",
+                    m[0], m[1], m[2], m[3], m[4], m[5]
+                ),
             }
         )?;
         Ok(())
