@@ -95,7 +95,9 @@ fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
     }
     match element.expand() {
         ExpandElement::Children(vec) => {
+            let pstyle = element.get_style_mut();
             for mut element in vec {
+                element.get_style_mut().inherit_from(&pstyle);
                 unroll(&mut element, out, link_inside);
             }
         }
@@ -200,15 +202,45 @@ impl Style {
 
         expr
     }
+    pub fn inherit_from(&mut self, parent: &Style) {
+        // Only inherit if the child's field is None!
+        if self.fill.is_none() { self.fill = parent.fill; }
+        if self.stroke.is_none() { self.stroke = parent.stroke; }
+        if self.stroke_width.is_none() { self.stroke_width = parent.stroke_width; }
+        if self.stroke_dasharray.is_empty() { self.stroke_dasharray = parent.stroke_dasharray.clone(); }
+        if self.stroke_linecap.is_none() { self.stroke_linecap = parent.stroke_linecap; }
+        if self.stroke_linejoin.is_none() { self.stroke_linejoin = parent.stroke_linejoin; }
+
+        // Opacities multiply
+        self.opacity = match (self.opacity, parent.opacity) {
+            (Some(c), Some(p)) => Some(c * p),
+            (None, Some(p)) => Some(p),
+            (Some(c), None) => Some(c),
+            (None, None) => None,
+        };
+    }
 }
 pub trait Styled {
     fn get_style_mut(&mut self) -> &mut Style;
-
+    fn remove_style(mut self) -> Self
+    where
+        Self: Sized
+    {
+        *self.get_style_mut() = Style::default();
+        self
+    }
     fn fill(mut self, color: Color) -> Self
     where
         Self: Sized,
     {
         self.get_style_mut().fill = Some(color);
+        self
+    }
+    fn remove_fill(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().fill = None;
         self
     }
     fn stroke(mut self, stroke: Color) -> Self
@@ -218,11 +250,25 @@ pub trait Styled {
         self.get_style_mut().stroke = Some(stroke);
         self
     }
+    fn remove_stroke(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().stroke = None;
+        self
+    }
     fn stroke_width(mut self, stroke_width: f32) -> Self
     where
         Self: Sized,
     {
         self.get_style_mut().stroke_width = Some(stroke_width);
+        self
+    }
+    fn remove_stroke_width(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().stroke_width = None;
         self
     }
     fn opacity(mut self, opacity: f32) -> Self
@@ -232,11 +278,25 @@ pub trait Styled {
         self.get_style_mut().opacity = Some(opacity);
         self
     }
+    fn remove_opacity(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().opacity = None;
+        self
+    }
     fn stroke_dasharray(mut self, sd: Vec<f32>) -> Self
     where
         Self: Sized,
     {
         self.get_style_mut().stroke_dasharray = sd;
+        self
+    }
+    fn remove_stroke_dasharray(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().stroke_dasharray = Vec::new();
         self
     }
     fn stroke_linecap(mut self, lc: LineCap) -> Self
@@ -246,11 +306,25 @@ pub trait Styled {
         self.get_style_mut().stroke_linecap = Some(lc);
         self
     }
-    fn stroke_linejoin(mut self, lj: LineJoin) -> Self
+    fn remove_stroke_linecap(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_linejoin = Some(lj);
+        self.get_style_mut().stroke_linecap = None;
+        self
+    }
+    fn stroke_linejoin(mut self, line_join: LineJoin) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().stroke_linejoin = Some(line_join);
+        self
+    }
+    fn remove_stroke_linejoin(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().stroke_linejoin = None;
         self
     }
     fn fill_opacity(mut self, fill_opacity: f32) -> Self
@@ -260,11 +334,25 @@ pub trait Styled {
         self.get_style_mut().fill_opacity = Some(fill_opacity);
         self
     }
+    fn remove_fill_opacity(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().fill_opacity = None;
+        self
+    }
     fn stroke_opacity(mut self, stroke_opacity: f32) -> Self
     where
         Self: Sized,
     {
         self.get_style_mut().stroke_opacity = Some(stroke_opacity);
+        self
+    }
+    fn remove_stroke_opacity(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_style_mut().stroke_opacity = None;
         self
     }
 }
@@ -384,7 +472,7 @@ impl Point {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum LineCap {
     Butt,
     Round,
@@ -404,7 +492,7 @@ impl Display for LineCap {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum LineJoin {
     Miter,
     Round,

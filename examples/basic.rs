@@ -31,9 +31,12 @@ fn main() -> Result<(), std::io::Error> {
     newsvg.add(Rect::default());
 
     newsvg.add(ThreeBeans {
+        style: Style::default()
+            .opacity(1.0)
+            .fill(Color::BLACK), //inherits whatever part is needed, multiplies the opacities
         bean1: x.clone().at(50.0, 50.0).link("/abc", true), //unrolls this!
         bean2: x.clone().at(100.0, 50.0).id("hi-hi"),
-        bean3: x.clone().at(150.0, 50.0),
+        bean3: x.clone().at(150.0, 50.0).remove_style(),
     }.link("def", false)); //ignores this!
 
     let clip=Rect::default()
@@ -57,6 +60,7 @@ fn main() -> Result<(), std::io::Error> {
 }
 
 struct ThreeBeans {
+    style: Style,
     bean1: Rect,
     bean2: Rect,
     bean3: Rect,
@@ -64,7 +68,7 @@ struct ThreeBeans {
 
 impl Styled for ThreeBeans {
     fn get_style_mut(&mut self) -> &mut Style {
-        unimplemented!()
+        &mut self.style
     }
 }
 

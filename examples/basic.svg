@@ -5,7 +5,7 @@
 <rect x="50" y="50" rx="5" ry="5" width="16" height="16" fill="#ff0000ff" opacity="0.5" />
 </a>
 <rect id="hi-hi" x="100" y="50" rx="5" ry="5" width="16" height="16" fill="#ff0000ff" opacity="0.5" />
-<rect x="150" y="50" rx="5" ry="5" width="16" height="16" fill="#ff0000ff" opacity="0.5" />
+<rect x="150" y="50" rx="5" ry="5" width="16" height="16" fill="#000000ff" opacity="1" />
 <defs>
 <clipPath id="clip">
 <rect x="300" y="300" width="16" height="16" />
