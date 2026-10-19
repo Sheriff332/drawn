@@ -6,7 +6,7 @@ pub struct Path {
     clip: bool,
     clip_path: Option<String>,
     style: Style,
-    d: Vec<PathCommand>
+    d: Vec<PathCommand>,
 }
 
 impl Styled for Path {
@@ -24,7 +24,10 @@ impl Element for Path {
         self.id.as_deref()
     }
 
-    fn id(mut self, _id: &str) -> Self where Self: Sized {
+    fn id(mut self, _id: &str) -> Self
+    where
+        Self: Sized,
+    {
         self.id = Some(_id.to_string());
         self
     }
@@ -37,7 +40,10 @@ impl Element for Path {
         Option::from(&self.link)
     }
 
-    fn link(mut self, _link: &str, _new_tab: bool) -> Self where Self: Sized {
+    fn link(mut self, _link: &str, _new_tab: bool) -> Self
+    where
+        Self: Sized,
+    {
         self.link = Some(Link::from(_link, _new_tab));
         self
     }
@@ -46,7 +52,9 @@ impl Element for Path {
         self.link = None;
     }
 
-    fn get_clip(&self) -> bool { self.clip }
+    fn get_clip(&self) -> bool {
+        self.clip
+    }
 
     fn clip(mut self) -> Self {
         self.clip = true;
@@ -57,7 +65,10 @@ impl Element for Path {
         self.clip = false;
     }
 
-    fn clip_path(mut self, element: &dyn Element) -> Self where Self: Sized {
+    fn clip_path(mut self, element: &dyn Element) -> Self
+    where
+        Self: Sized,
+    {
         if let Some(id) = element.get_id() {
             self.clip_path = Some(id.to_string());
         }

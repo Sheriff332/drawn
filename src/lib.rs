@@ -3,9 +3,9 @@ use std::io::Write;
 use std::{fs, io};
 
 pub mod group;
+mod path;
 pub mod shapes;
 mod text;
-mod path;
 
 #[derive(Default)]
 pub struct Svg {
@@ -45,15 +45,25 @@ impl Svg {
         writeln!(&mut writer, r#" xmlns="http://www.w3.org/2000/svg">"#)?;
         for element in &mut self.elements {
             let clip = element.get_clip() && element.get_id().is_some();
-            if clip { unroll_and_erase(element); }
-            let link_inside = if clip { false } else { unroll_link_check(element) };
+            if clip {
+                unroll_and_erase(element);
+            }
+            let link_inside = if clip {
+                false
+            } else {
+                unroll_link_check(element)
+            };
             let linked = element.get_link().is_some() && !link_inside;
             if linked {
-                writeln!(&mut writer, r#"<a href="{}"{}>"#,
-                element.get_link().unwrap().link,
-                if element.get_link().unwrap().new_tab {
-                    r#" target="_blank" rel="noopener""#
-                } else { "" }
+                writeln!(
+                    &mut writer,
+                    r#"<a href="{}"{}>"#,
+                    element.get_link().unwrap().link,
+                    if element.get_link().unwrap().new_tab {
+                        r#" target="_blank" rel="noopener""#
+                    } else {
+                        ""
+                    }
                 )?;
             }
             if clip && let Some(id) = element.get_id() {
@@ -83,11 +93,14 @@ fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
     if check {
         link_inside = unroll_link_check(element);
         if element.get_link().is_some() && !link_inside {
-            out.push(format!(r#"<a href="{}"{}>"#,
-                             element.get_link().unwrap().link,
-                             if element.get_link().unwrap().new_tab {
-                                 r#" target="_blank" rel="noopener""#
-                             } else { "" }
+            out.push(format!(
+                r#"<a href="{}"{}>"#,
+                element.get_link().unwrap().link,
+                if element.get_link().unwrap().new_tab {
+                    r#" target="_blank" rel="noopener""#
+                } else {
+                    ""
+                }
             ));
         }
     } else {
@@ -97,7 +110,7 @@ fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
         ExpandElement::Children(vec) => {
             let pstyle = element.get_style_mut();
             for mut element in vec {
-                element.get_style_mut().inherit_from(&pstyle);
+                element.get_style_mut().inherit_from(pstyle);
                 unroll(&mut element, out, link_inside);
             }
         }
@@ -156,15 +169,21 @@ pub enum StyleTarget {
 
 impl Style {
     pub fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
-        if (![StyleTarget::Image, StyleTarget::Line].contains(&target)) && let Some(fill) = self.fill {
+        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
+            && let Some(fill) = self.fill
+        {
             *expr += format!(r#" fill="{}""#, fill).as_str();
         }
 
-        if (![StyleTarget::Image].contains(&target)) && let Some(stroke) = self.stroke {
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke) = self.stroke
+        {
             *expr += format!(r#" stroke="{}""#, stroke).as_str();
         }
 
-        if (![StyleTarget::Image].contains(&target)) && let Some(stroke_width) = self.stroke_width {
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke_width) = self.stroke_width
+        {
             *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
         }
 
@@ -184,19 +203,27 @@ impl Style {
             .as_str();
         }
 
-        if (![StyleTarget::Image].contains(&target)) && let Some(stroke_linecap) = &self.stroke_linecap {
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke_linecap) = &self.stroke_linecap
+        {
             *expr += format!(r#" stroke-linecap="{}""#, stroke_linecap).as_str();
         }
 
-        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Ellipse].contains(&target)) && let Some(stroke_linejoin) = &self.stroke_linejoin {
+        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Ellipse].contains(&target))
+            && let Some(stroke_linejoin) = &self.stroke_linejoin
+        {
             *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
         }
 
-        if (![StyleTarget::Image, StyleTarget::Line].contains(&target)) && let Some(fill_opacity) = self.fill_opacity {
+        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
+            && let Some(fill_opacity) = self.fill_opacity
+        {
             *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
         }
 
-        if (![StyleTarget::Image].contains(&target)) && let Some(stroke_opacity) = self.stroke_opacity {
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke_opacity) = self.stroke_opacity
+        {
             *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
         }
 
@@ -204,12 +231,24 @@ impl Style {
     }
     pub fn inherit_from(&mut self, parent: &Style) {
         // Only inherit if the child's field is None!
-        if self.fill.is_none() { self.fill = parent.fill; }
-        if self.stroke.is_none() { self.stroke = parent.stroke; }
-        if self.stroke_width.is_none() { self.stroke_width = parent.stroke_width; }
-        if self.stroke_dasharray.is_empty() { self.stroke_dasharray = parent.stroke_dasharray.clone(); }
-        if self.stroke_linecap.is_none() { self.stroke_linecap = parent.stroke_linecap; }
-        if self.stroke_linejoin.is_none() { self.stroke_linejoin = parent.stroke_linejoin; }
+        if self.fill.is_none() {
+            self.fill = parent.fill;
+        }
+        if self.stroke.is_none() {
+            self.stroke = parent.stroke;
+        }
+        if self.stroke_width.is_none() {
+            self.stroke_width = parent.stroke_width;
+        }
+        if self.stroke_dasharray.is_empty() {
+            self.stroke_dasharray = parent.stroke_dasharray.clone();
+        }
+        if self.stroke_linecap.is_none() {
+            self.stroke_linecap = parent.stroke_linecap;
+        }
+        if self.stroke_linejoin.is_none() {
+            self.stroke_linejoin = parent.stroke_linejoin;
+        }
 
         // Opacities multiply
         self.opacity = match (self.opacity, parent.opacity) {
@@ -224,7 +263,7 @@ pub trait Styled {
     fn get_style_mut(&mut self) -> &mut Style;
     fn remove_style(mut self) -> Self
     where
-        Self: Sized
+        Self: Sized,
     {
         *self.get_style_mut() = Style::default();
         self
@@ -368,17 +407,39 @@ pub trait Element: Styled {
     fn get_id(&self) -> Option<&str> {
         None
     }
-    fn id(self, _id: &str) -> Self where Self: Sized { self }
+    fn id(self, _id: &str) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
     fn remove_id(&mut self) {}
     fn get_link(&self) -> Option<&Link> {
         None
     }
-    fn link(self, _link: &str, _new_tab: bool) -> Self where Self: Sized { self }
+    fn link(self, _link: &str, _new_tab: bool) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
     fn remove_link(&mut self) {}
-    fn get_clip(&self) -> bool { false }
-    fn clip(self) -> Self where Self: Sized { self }
+    fn get_clip(&self) -> bool {
+        false
+    }
+    fn clip(self) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
     fn remove_clip(&mut self) {}
-    fn clip_path(self, _element: &dyn Element) -> Self where Self: Sized { self }
+    fn clip_path(self, _element: &dyn Element) -> Self
+    where
+        Self: Sized,
+    {
+        self
+    }
 }
 
 pub enum ExpandElement {
@@ -520,7 +581,10 @@ pub struct Link {
 
 impl Link {
     pub fn from(link: &str, new_tab: bool) -> Link {
-        Link { link: link.to_string(), new_tab }
+        Link {
+            link: link.to_string(),
+            new_tab,
+        }
     }
 }
 

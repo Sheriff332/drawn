@@ -25,29 +25,30 @@ fn main() -> Result<(), std::io::Error> {
             //.fill(Color::BLACK)
             .stroke_width(0.5)
             .at(100.0, 100.0)
-            .id("hi-there")
+            .id("hi-there"),
     );
 
     newsvg.add(Rect::default());
 
-    newsvg.add(ThreeBeans {
-        style: Style::default()
-            .opacity(1.0)
-            .fill(Color::BLACK), //inherits whatever part is needed, multiplies the opacities
-        bean1: x.clone().at(50.0, 50.0).link("/abc", true), //unrolls this!
-        bean2: x.clone().at(100.0, 50.0).id("hi-hi"),
-        bean3: x.clone().at(150.0, 50.0).remove_style(),
-    }.link("def", false)); //ignores this!
+    newsvg.add(
+        ThreeBeans {
+            style: Style::default().opacity(1.0).fill(Color::BLACK), //inherits whatever part is needed, multiplies the opacities
+            bean1: x.clone().at(50.0, 50.0).link("/abc", true),      //unrolls this!
+            bean2: x.clone().at(100.0, 50.0).id("hi-hi"),
+            bean3: x.clone().at(150.0, 50.0).remove_style(),
+        }
+        .link("def", false),
+    ); //ignores this!
 
-    let clip=Rect::default()
+    let clip = Rect::default()
         .at(300.0, 300.0)
         .size(16.0, 16.0)
         .id("clip")
         .clip();
 
     let test = Rect::default()
-        .at(300.0,300.0)
-        .size(100.0,100.0)
+        .at(300.0, 300.0)
+        .size(100.0, 100.0)
         .fill(Color::GREEN)
         .clip_path(&clip);
 
