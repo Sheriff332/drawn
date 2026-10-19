@@ -1,9 +1,81 @@
+//! `drawn` is a lightweight, easy-to-use interface for building SVGs
+//! and performing unique operations on in-memory SVGs.
+//!
+//! Despite originally being made to create SVG-only websites,
+//! it has many generic SVG methods and types suitable even for power users.
+//!
+//! It prioritizes making highly optimized SVGs in terms of speed and file size,
+//! drawing parallels with tools like SVGO.
+//! Additionally, it's power lies in custom methods and transformations,
+//! alongside user defined Elements and a powerful theming system.
+//!
+//! ## Specification & Philosophy
+//!
+//! `drawn` targets a curated, high-performance subset of the **W3C SVG 2**
+//! specification (with universal backward compatibility for **SVG 1.1**).
+//!
+//! ### Why doesn't `drawn` implement all SVG elements and properties?
+//!
+//! The complete SVG specification is over 800 pages long and includes decades of
+//! legacy web baggage. `drawn` is designed from the ground up for high-framerate
+//! interactive web canvases, generative graphics, and maximum extensibility.
+//!
+//! Thus, drawn does not implement methods like:
+//!
+//! - `<filter>`, `<mask>`: Very slow and heavy on the CPU
+//!
+//! - `<animate>`: No longer in use, and drawn makes static SVG's
+//!
+//! - `<textPath>`, `<foreignObject>`: Buggy and inconsistent behavior, rarely used
+//!
+//! - `stroke-miterlimit`, `stroke-dashoffset` etc.:
+//! Cases where the usage is as rare as these are omitted to keep the crate lightweight
+//!
+//! - No CSS support: CSS has inconsistent behavior depending on the platform
+//!
+//! If you want to use any such methods yourself which are not available here,
+//! feel free to look at some more well-established alternatives like:
+//!
+//! [`svg`](https://crates.io/crates/svg)
+//! : traditional 1:1 XML DOM builder
+//!
+//! [`usvg`](https://crates.io/crates/usvg) / [`resvg`](https://crates.io/crates/resvg)
+//! : for parsing / rasterizing SVG's
+//!
+//! [`kurbo`](https://crates.io/crates/kurbo)
+//! : dedicated 2D geometry math library
+//!
+//! ## Quick Start
+//!
+//! ```rust
+//! use drawn::prelude::*;
+//!
+//! fn main() -> Result<(), std::io::Error> {
+//!     let mut new = Svg::default().size(100.0,100.0);
+//!
+//!     new.add(
+//!         Rect::default()
+//!             .size(50.0, 50.0)
+//!             .round(5.0, 5.0)
+//!             .stroke_width(0.5)
+//!             .at(20.0, 20.0)
+//!             .fill(Color::RED)
+//!             .id("hi-there"),
+//!     );
+//!
+//!     new.write_to_file("new.svg")?;
+//!     Ok(())
+//! }
+//! ```
+
+
 #[macro_use]
 mod macros;
 pub mod group;
 mod path;
 pub mod shapes;
 mod text;
+mod image;
 
 use std::fmt::{Display, Formatter};
 use std::io::Write;
@@ -11,6 +83,7 @@ use std::{fs, io};
 
 #[derive(Default)]
 pub struct Svg {
+    properties: Properties,
     width: Option<f32>,
     height: Option<f32>,
     viewbox: Option<(Point, Point)>,
@@ -73,7 +146,7 @@ impl Svg {
                 writeln!(&mut writer, r#"<clipPath id="{}">"#, id)?;
             }
             let mut lines = Vec::new();
-            unroll(element, &mut lines, link_inside);
+            unroll_into(element, &mut lines, link_inside);
             for line in lines {
                 writeln!(writer, "{}", line)?;
             }
@@ -90,7 +163,70 @@ impl Svg {
     }
 }
 
-fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
+impl_properties!(Svg);
+
+impl Element for Svg {
+    fn expand(&mut self) -> ExpandElement {
+        let mut out = String::new();
+        out += "<svg";
+        if let Some(viewbox) = self.viewbox {
+            out += format!(
+                r#" viewBox="{} {} {} {}""#,
+                viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y
+            ).as_str();
+        }
+        if let Some(width) = self.width {
+            out += format!(r#" width="{}""#, width).as_str();
+        }
+        if let Some(height) = self.height {
+            out += format!(r#" height="{}""#, height).as_str();
+        }
+        out += r#" xmlns="http://www.w3.org/2000/svg">"#;
+        for element in &mut self.elements {
+            let clip = element.get_clip() && element.get_id().is_some();
+            if clip {
+                unroll_and_erase(element);
+            }
+            let link_inside = if clip {
+                false
+            } else {
+                unroll_link_check(element)
+            };
+            let linked = element.get_link().is_some() && !link_inside;
+            if linked {
+                out += format!(
+                    r#"<a href="{}"{}>"#,
+                    element.get_link().unwrap().link,
+                    if element.get_link().unwrap().new_tab {
+                        r#" target="_blank" rel="noopener""#
+                    } else {
+                        ""
+                    }
+                ).as_str();
+            }
+            if clip && let Some(id) = element.get_id() {
+                out += "<defs>";
+                out += format!(r#"<clipPath id="{}">"#, id).as_str();
+            }
+            let mut lines = Vec::new();
+            unroll_into(element, &mut lines, link_inside);
+            for line in lines {
+                out += format!("{}", line).as_str();
+            }
+            if clip {
+                out += "</clipPath>";
+                out += "</defs>";
+            }
+            if linked {
+                out += "</a>";
+            }
+        }
+        out += "</svg>";
+        ExpandElement::RawSvg(out)
+    }
+}
+
+fn unroll_into(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
     let link_inside;
     if check {
         link_inside = unroll_link_check(element);
@@ -113,7 +249,7 @@ fn unroll(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
             let pstyle = element.get_style_mut();
             for mut element in vec {
                 element.get_style_mut().inherit_from(pstyle);
-                unroll(&mut element, out, link_inside);
+                unroll_into(&mut element, out, link_inside);
             }
         }
         ExpandElement::RawSvg(str) => {
