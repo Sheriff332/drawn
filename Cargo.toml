@@ -8,6 +8,12 @@ repository = "https://github.com/Sheriff332/drawn"
 readme = "README.md"
 keywords = ["svg", "graphics", "vector", "canvas", "drawing"]
 categories = ["graphics", "multimedia::images", "rendering"]
+exclude = [
+    "/examples/*",
+    "/*.png",
+    "/*.svg",
+    "/.idea/*"
+]
 
 [dependencies]
 base64 = "0.23.1"
