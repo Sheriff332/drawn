@@ -1,5 +1,5 @@
 use crate::{
-    Element, ExpandElement, ImplProperties, Link, Point, Properties, Style, StyleTarget, Transform,
+    Element, ExpandElement, ImplProperties, Link, Point, Properties, StyleTarget, Transform,
 };
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;

@@ -1,5 +1,5 @@
 #![allow(non_snake_case)]
-use crate::{Element, ExpandElement, ImplProperties, Link, Point, Properties, Style, Transform};
+use crate::{Element, ExpandElement, ImplProperties, Link, Point, Properties, Transform};
 
 pub struct Path {
     properties: Properties,

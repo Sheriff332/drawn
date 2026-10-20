@@ -69,12 +69,12 @@
 //! ```
 
 #[macro_use]
-mod macros;
+pub mod macros;
 pub mod group;
-mod image;
-mod path;
+pub mod image;
+pub mod path;
 pub mod shapes;
-mod text;
+pub mod text;
 
 use std::fmt::{Display, Formatter};
 use std::io::Write;
@@ -247,9 +247,9 @@ fn unroll_into(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: boo
     }
     match element.expand() {
         ExpandElement::Children(vec) => {
-            let pstyle = element.get_style_mut();
+            let pstyle = &element.get_properties_mut().style;
             for mut element in vec {
-                element.get_style_mut().inherit_from(pstyle);
+                element.get_properties_mut().style.inherit_from(pstyle);
                 unroll_into(&mut element, out, link_inside);
             }
         }
@@ -276,10 +276,7 @@ fn unroll_link_check(element: &mut Box<dyn Element>) -> bool {
 fn unroll_and_erase(element: &mut Box<dyn Element>) {
     if let ExpandElement::Children(vec) = element.expand() {
         for mut element in vec {
-            *element.get_style_mut() = Style::default();
-            element.remove_id();
-            element.remove_link();
-            element.remove_clip();
+            *element.get_properties_mut() = Properties::default();
             unroll_and_erase(&mut element);
         }
     }
@@ -299,7 +296,7 @@ pub struct Style {
 }
 
 #[derive(PartialEq)]
-pub enum StyleTarget {
+pub(crate) enum StyleTarget {
     All,
     Image,
     Line,
@@ -339,7 +336,7 @@ impl Style {
 }
 
 impl Properties {
-    pub fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
+    fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
         if !self.clip
             && let Some(id) = &self.id
         {
@@ -420,147 +417,154 @@ impl Properties {
 
 #[derive(Clone, Default)]
 pub struct Properties {
-    id: Option<String>,
-    link: Option<Link>,
-    clip: bool,
-    clip_path: Option<String>,
-    transforms: Vec<Transform>,
-    style: Style,
+    pub id: Option<String>,
+    pub link: Option<Link>,
+    pub clip: bool,
+    pub clip_path: Option<String>,
+    pub transforms: Vec<Transform>,
+    pub style: Style,
 }
 
 pub trait ImplProperties {
-    fn get_style_mut(&mut self) -> &mut Style;
+    fn get_properties_mut(&mut self) -> &mut Properties;
+    fn remove_properties(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        *self.get_properties_mut() = Properties::default();
+        self
+    }
     fn remove_style(mut self) -> Self
     where
         Self: Sized,
     {
-        *self.get_style_mut() = Style::default();
+        self.get_properties_mut().style = Style::default();
         self
     }
     fn fill(mut self, color: Color) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().fill = Some(color);
+        self.get_properties_mut().style.fill = Some(color);
         self
     }
     fn remove_fill(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().fill = None;
+        self.get_properties_mut().style.fill = None;
         self
     }
     fn stroke(mut self, stroke: Color) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke = Some(stroke);
+        self.get_properties_mut().style.stroke = Some(stroke);
         self
     }
     fn remove_stroke(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke = None;
+        self.get_properties_mut().style.stroke = None;
         self
     }
     fn stroke_width(mut self, stroke_width: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_width = Some(stroke_width);
+        self.get_properties_mut().style.stroke_width = Some(stroke_width);
         self
     }
     fn remove_stroke_width(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_width = None;
+        self.get_properties_mut().style.stroke_width = None;
         self
     }
     fn opacity(mut self, opacity: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().opacity = Some(opacity);
+        self.get_properties_mut().style.opacity = Some(opacity);
         self
     }
     fn remove_opacity(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().opacity = None;
+        self.get_properties_mut().style.opacity = None;
         self
     }
     fn stroke_dasharray(mut self, sd: Vec<f32>) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_dasharray = sd;
+        self.get_properties_mut().style.stroke_dasharray = sd;
         self
     }
     fn remove_stroke_dasharray(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_dasharray = Vec::new();
+        self.get_properties_mut().style.stroke_dasharray = Vec::new();
         self
     }
     fn stroke_linecap(mut self, lc: LineCap) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_linecap = Some(lc);
+        self.get_properties_mut().style.stroke_linecap = Some(lc);
         self
     }
     fn remove_stroke_linecap(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_linecap = None;
+        self.get_properties_mut().style.stroke_linecap = None;
         self
     }
     fn stroke_linejoin(mut self, line_join: LineJoin) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_linejoin = Some(line_join);
+        self.get_properties_mut().style.stroke_linejoin = Some(line_join);
         self
     }
     fn remove_stroke_linejoin(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_linejoin = None;
+        self.get_properties_mut().style.stroke_linejoin = None;
         self
     }
     fn fill_opacity(mut self, fill_opacity: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().fill_opacity = Some(fill_opacity);
+        self.get_properties_mut().style.fill_opacity = Some(fill_opacity);
         self
     }
     fn remove_fill_opacity(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().fill_opacity = None;
+        self.get_properties_mut().style.fill_opacity = None;
         self
     }
     fn stroke_opacity(mut self, stroke_opacity: f32) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_opacity = Some(stroke_opacity);
+        self.get_properties_mut().style.stroke_opacity = Some(stroke_opacity);
         self
     }
     fn remove_stroke_opacity(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_style_mut().stroke_opacity = None;
+        self.get_properties_mut().style.stroke_opacity = None;
         self
     }
     fn get_id(&self) -> Option<&str> {
@@ -611,8 +615,8 @@ pub trait ImplProperties {
     fn remove_transforms(&mut self) {}
 }
 
-impl ImplProperties for Style {
-    fn get_style_mut(&mut self) -> &mut Style {
+impl ImplProperties for Properties {
+    fn get_properties_mut(&mut self) -> &mut Properties {
         self
     }
 }
@@ -801,5 +805,6 @@ pub mod prelude {
     pub use crate::*;
     pub use group::*;
     pub use image::*;
-    pub use shapes::rect::*;
+    pub use text::*;
+    pub use shapes::*;
 }

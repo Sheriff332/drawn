@@ -1,8 +1,9 @@
+#[macro_export]
 macro_rules! impl_properties {
     ($name: ident) => {
         impl ImplProperties for $name {
-            fn get_style_mut(&mut self) -> &mut Style {
-                &mut self.properties.style
+            fn get_properties_mut(&mut self) -> &mut Properties {
+                &mut self.properties
             }
 
             fn get_id(&self) -> Option<&str> {

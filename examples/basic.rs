@@ -1,4 +1,5 @@
 use drawn::prelude::*;
+use drawn::shapes::rect::*;
 
 fn main() -> Result<(), std::io::Error> {
     let mut newsvg = Svg::default().size(1000.0, 1000.0);
@@ -18,27 +19,17 @@ fn main() -> Result<(), std::io::Error> {
 
     newsvg.add(g);
 
-    newsvg.add(
-        Rect::default()
-            .size(16.0, 16.0)
-            .round(5.0, 5.0)
-            //.fill(Color::BLACK)
-            .stroke_width(0.5)
-            .at(100.0, 100.0)
-            .id("hi-there"),
-    );
-
     newsvg.add(Rect::default());
 
     newsvg.add(
         ThreeBeans {
-            style: Style::default().opacity(1.0).fill(Color::BLACK), //inherits whatever part is needed, multiplies the opacities
-            bean1: x.clone().at(50.0, 50.0).link("/abc", true),      //unrolls this!
+            properties: Properties::default().opacity(1.0).fill(Color::BLACK),
+            bean1: x.clone().at(50.0, 50.0).link("/abc", true), //unrolls this!
             bean2: x.clone().at(100.0, 50.0).id("hi-hi"),
             bean3: x.clone().at(150.0, 50.0).remove_style(),
         }
-        .link("def", false),
-    ); //ignores this!
+        .link("def", false), //ignores this!
+    );
 
     let clip = Rect::default()
         .at(300.0, 300.0)
@@ -87,22 +78,37 @@ fn main() -> Result<(), std::io::Error> {
     );
     newsvg.add(insertsvg);
 
+    newsvg.add(
+        Text::default()
+            .at(400.0, 100.0)
+            .add(
+                TextSpan::from("abc")
+                    .fill(Color::RED)
+                    .oblique()
+                    .letter_spacing(10.0)
+            )
+            .add(
+                TextSpan::from("Hello")
+                    .text("Hello Now")
+                    .bold()
+                    .italic()
+                    .underline()
+            )
+            .stroke_width(0.5)
+    );
+
     newsvg.write_to_file("examples/basic.svg")?;
     Ok(())
 }
 
 struct ThreeBeans {
-    style: Style,
+    properties: Properties,
     bean1: Rect,
     bean2: Rect,
     bean3: Rect,
 }
 
-impl ImplProperties for ThreeBeans {
-    fn get_style_mut(&mut self) -> &mut Style {
-        &mut self.style
-    }
-}
+impl_properties!(ThreeBeans);
 
 impl Element for ThreeBeans {
     fn expand(&mut self) -> ExpandElement {
