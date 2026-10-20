@@ -301,6 +301,7 @@ pub(crate) enum StyleTarget {
     Image,
     Line,
     Ellipse,
+    Polyline,
 }
 
 impl Style {
@@ -352,7 +353,7 @@ impl Properties {
             }
             *expr += r#"""#;
         }
-        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
+        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Polyline].contains(&target))
             && let Some(fill) = self.style.fill
         {
             *expr += format!(r#" fill="{}""#, fill).as_str();
@@ -399,7 +400,7 @@ impl Properties {
             *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
         }
 
-        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
+        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Polyline].contains(&target))
             && let Some(fill_opacity) = self.style.fill_opacity
         {
             *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
@@ -806,5 +807,5 @@ pub mod prelude {
     pub use group::*;
     pub use image::*;
     pub use text::*;
-    pub use shapes::*;
+    pub use shapes::{rect::*, circle::*, ellipse::*, line::*, polygon::*, polyline::*};
 }

@@ -1,6 +1,6 @@
-mod circle;
-mod ellipse;
-mod line;
-mod polygon;
-mod polyline;
+pub mod circle;
+pub mod ellipse;
+pub mod line;
+pub mod polygon;
+pub mod polyline;
 pub mod rect;
