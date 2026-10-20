@@ -1,4 +1,10 @@
 # drawn-rs
+[![License](https://img.shields.io/crates/l/drawn?style=flat-square&color=blue)](LICENSE)
+[![Version](https://img.shields.io/crates/v/drawn?style=flat-square&color=orange
+)]()
+[![Downloads](https://img.shields.io/crates/dr/drawn?style=flat-square&color=green
+)]()
+[![Build Status](https://img.shields.io/github/actions/workflow/status/Sheriff332/drawn/ci.yml?style=flat-square)](https://github.com/Sheriff332/drawn/actions)
 
 `drawn` is a lightweight, easy-to-use interface for building SVGs and performing unique operations on in-memory SVGs.
 
@@ -7,7 +13,9 @@ It prioritizes making highly optimized SVGs in terms of speed and file size, dra
 ## Specification & Philosophy
 `drawn` targets a curated, high-performance subset of the W3C SVG 2 specification (with universal backward compatibility for SVG 1.1).
 
-<!-- Add documentation link here later !!!!! -->
+**Read the docs here:**
+
+<a href="https://docs.rs/drawn/latest/drawn"><img src="https://img.shields.io/badge/Documentation-2F81F7?style=for-the-badge&logo=readthedocs&logoColor=white" alt="Documentation"/></a>
 
 ### Why doesn't drawn implement all SVG elements and properties?
 The complete SVG specification is over 800 pages long and includes decades of legacy web baggage. `drawn` is designed from the ground up for high-framerate interactive web canvases, generative graphics, and maximum extensibility.
