@@ -29,7 +29,7 @@
 //! - `<textPath>`, `<foreignObject>`: Buggy and inconsistent behavior, rarely used
 //!
 //! - `stroke-miterlimit`, `stroke-dashoffset` etc.:
-//! Cases where the usage is as rare as these are omitted to keep the crate lightweight
+//!   Cases where the usage is as rare as these are omitted to keep the crate lightweight
 //!
 //! - No CSS support: CSS has inconsistent behavior depending on the platform
 //!
@@ -68,14 +68,13 @@
 //! }
 //! ```
 
-
 #[macro_use]
 mod macros;
 pub mod group;
+mod image;
 mod path;
 pub mod shapes;
 mod text;
-mod image;
 
 use std::fmt::{Display, Formatter};
 use std::io::Write;
@@ -173,7 +172,8 @@ impl Element for Svg {
             out += format!(
                 r#" viewBox="{} {} {} {}""#,
                 viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y
-            ).as_str();
+            )
+            .as_str();
         }
         if let Some(width) = self.width {
             out += format!(r#" width="{}""#, width).as_str();
@@ -202,7 +202,8 @@ impl Element for Svg {
                     } else {
                         ""
                     }
-                ).as_str();
+                )
+                .as_str();
             }
             if clip && let Some(id) = element.get_id() {
                 out += "<defs>";
@@ -211,7 +212,7 @@ impl Element for Svg {
             let mut lines = Vec::new();
             unroll_into(element, &mut lines, link_inside);
             for line in lines {
-                out += format!("{}", line).as_str();
+                out += line.as_str();
             }
             if clip {
                 out += "</clipPath>";
@@ -306,67 +307,6 @@ pub enum StyleTarget {
 }
 
 impl Style {
-    pub fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
-        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
-            && let Some(fill) = self.fill
-        {
-            *expr += format!(r#" fill="{}""#, fill).as_str();
-        }
-
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke) = self.stroke
-        {
-            *expr += format!(r#" stroke="{}""#, stroke).as_str();
-        }
-
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke_width) = self.stroke_width
-        {
-            *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
-        }
-
-        if let Some(opacity) = self.opacity {
-            *expr += format!(r#" opacity="{}""#, opacity).as_str();
-        }
-
-        if (![StyleTarget::Image].contains(&target)) && !self.stroke_dasharray.is_empty() {
-            *expr += format!(
-                r#" stroke-dasharray="{}""#,
-                self.stroke_dasharray
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-            .as_str();
-        }
-
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke_linecap) = &self.stroke_linecap
-        {
-            *expr += format!(r#" stroke-linecap="{}""#, stroke_linecap).as_str();
-        }
-
-        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Ellipse].contains(&target))
-            && let Some(stroke_linejoin) = &self.stroke_linejoin
-        {
-            *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
-        }
-
-        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
-            && let Some(fill_opacity) = self.fill_opacity
-        {
-            *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
-        }
-
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke_opacity) = self.stroke_opacity
-        {
-            *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
-        }
-
-        expr
-    }
     pub fn inherit_from(&mut self, parent: &Style) {
         // Only inherit if the child's field is None!
         if self.fill.is_none() {
@@ -395,6 +335,86 @@ impl Style {
             (Some(c), None) => Some(c),
             (None, None) => None,
         };
+    }
+}
+
+impl Properties {
+    pub fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
+        if !self.clip
+            && let Some(id) = &self.id
+        {
+            *expr += format!(r#" id="{}""#, id).as_str();
+        }
+        if let Some(clip_path) = &self.clip_path {
+            *expr += format!(r#" clip-path="url(#{})""#, clip_path).as_str();
+        }
+        if !self.transforms.is_empty() {
+            *expr += r#" transform=""#;
+            for t in &self.transforms {
+                *expr += format!(r#"{} "#, t).as_str();
+            }
+            *expr += r#"""#;
+        }
+        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
+            && let Some(fill) = self.style.fill
+        {
+            *expr += format!(r#" fill="{}""#, fill).as_str();
+        }
+
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke) = self.style.stroke
+        {
+            *expr += format!(r#" stroke="{}""#, stroke).as_str();
+        }
+
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke_width) = self.style.stroke_width
+        {
+            *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
+        }
+
+        if let Some(opacity) = self.style.opacity {
+            *expr += format!(r#" opacity="{}""#, opacity).as_str();
+        }
+
+        if (![StyleTarget::Image].contains(&target)) && !self.style.stroke_dasharray.is_empty() {
+            *expr += format!(
+                r#" stroke-dasharray="{}""#,
+                self.style
+                    .stroke_dasharray
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+            .as_str();
+        }
+
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke_linecap) = &self.style.stroke_linecap
+        {
+            *expr += format!(r#" stroke-linecap="{}""#, stroke_linecap).as_str();
+        }
+
+        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Ellipse].contains(&target))
+            && let Some(stroke_linejoin) = &self.style.stroke_linejoin
+        {
+            *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
+        }
+
+        if (![StyleTarget::Image, StyleTarget::Line].contains(&target))
+            && let Some(fill_opacity) = self.style.fill_opacity
+        {
+            *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
+        }
+
+        if (![StyleTarget::Image].contains(&target))
+            && let Some(stroke_opacity) = self.style.stroke_opacity
+        {
+            *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
+        }
+
+        expr
     }
 }
 
@@ -780,5 +800,6 @@ impl Display for Transform {
 pub mod prelude {
     pub use crate::*;
     pub use group::*;
+    pub use image::*;
     pub use shapes::rect::*;
 }

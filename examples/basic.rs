@@ -69,6 +69,24 @@ fn main() -> Result<(), std::io::Error> {
             .transform(Transform::Matrix([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])),
     );
 
+    newsvg.add(
+        Image::default()
+            .href("examples/img.png")
+            .at(500.0, 500.0)
+            .size(100.0, 100.0)
+            .opacity(0.5),
+    );
+
+    let mut insertsvg = Svg::default().size(500.0, 500.0);
+    insertsvg.add(
+        Rect::default()
+            .size(16.0, 16.0)
+            .round(5.0, 5.0)
+            .at(200.0, 100.0)
+            .fill(Color::BLUE),
+    );
+    newsvg.add(insertsvg);
+
     newsvg.write_to_file("examples/basic.svg")?;
     Ok(())
 }

@@ -29,11 +29,6 @@ impl Rect {
 impl Element for Rect {
     fn expand(&mut self) -> ExpandElement {
         let mut expr = r#"<rect"#.to_string();
-        if !self.properties.clip
-            && let Some(id) = &self.properties.id
-        {
-            expr += format!(r#" id="{}""#, id).as_str();
-        }
         if let Some(pos) = self.pos {
             expr += format!(r#" x="{}" y="{}""#, pos.x, pos.y).as_str();
         }
@@ -49,19 +44,7 @@ impl Element for Rect {
         if let Some(height) = self.height {
             expr += format!(r#" height="{}""#, height).as_str();
         }
-        if let Some(clip_path) = &self.properties.clip_path {
-            expr += format!(r#" clip-path="url(#{})""#, clip_path).as_str();
-        }
-        if !self.properties.transforms.is_empty() {
-            expr += r#" transform=""#;
-            for t in &self.properties.transforms {
-                expr += format!(r#"{} "#, t).as_str();
-            }
-            expr += r#"""#;
-        }
-        self.properties
-            .style
-            .to_raw_svg(&mut expr, StyleTarget::All);
+        self.properties.to_raw_svg(&mut expr, StyleTarget::All);
         expr += r#" />"#;
         ExpandElement::RawSvg(expr)
     }

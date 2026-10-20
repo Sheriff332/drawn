@@ -1,6 +1,13 @@
 [package]
 name = "drawn"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+description = "Lightweight SVG builder with batteries included"
+license = "GPL-3"
+repository = "https://github.com/Sheriff332/drawn"
+readme = "README.md"
+keywords = ["svg", "graphics", "vector", "canvas", "drawing"]
+categories = ["graphics", "multimedia::images", "rendering"]
 
 [dependencies]
+base64 = "0.23.1"
