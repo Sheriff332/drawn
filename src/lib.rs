@@ -807,5 +807,6 @@ pub mod prelude {
     pub use group::*;
     pub use image::*;
     pub use text::*;
+    pub use path::*;
     pub use shapes::{rect::*, circle::*, ellipse::*, line::*, polygon::*, polyline::*};
 }

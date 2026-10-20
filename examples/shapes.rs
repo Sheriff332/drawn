@@ -95,7 +95,16 @@ fn main() -> Result<(), std::io::Error> {
             .fill(Color::TRANSPARENT) // dont even need this lol
             .stroke_width(5.0),
     );
-    //no path yet
+    shapesvg.add(
+        Path::default()
+            .M(&[Point::from(20.0,230.0)])
+            .Q(40.0,205.0,50.0,230.0)
+            .T(90.0,230.0)
+            .fill(Color::TRANSPARENT)
+            .stroke(Color::BLUE)
+            .stroke_width(5.0),
+
+    );
     shapesvg.write_to_file("examples/shapesvg.svg")?;
     Ok(())
 }
