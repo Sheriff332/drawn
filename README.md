@@ -1,9 +1,9 @@
 # drawn-rs
 [![License](https://img.shields.io/crates/l/drawn?style=flat-square&color=blue)](LICENSE)
 [![Version](https://img.shields.io/crates/v/drawn?style=flat-square&color=orange
-)]()
+)](https://crates.io/crates/drawn/versions)
 [![Downloads](https://img.shields.io/crates/dr/drawn?style=flat-square&color=green
-)]()
+)](https://crates.io/crates/drawn)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/Sheriff332/drawn/ci.yml?style=flat-square)](https://github.com/Sheriff332/drawn/actions)
 
 `drawn` is a lightweight, easy-to-use interface for building SVGs and performing unique operations on in-memory SVGs.
