@@ -50,7 +50,7 @@
 //! ```rust
 //! use drawn::prelude::*;
 //!
-//! fn main() -> Result<(), std::io::Error> {
+//! fn main() -> std::io::Result<> {
 //!     let mut new = Svg::default().size(100.0,100.0);
 //!
 //!     new.push(
@@ -66,6 +66,26 @@
 //!     new.write_to_file("new.svg")?;
 //!     Ok(())
 //! }
+//! ```
+//!
+//! ## Debug
+//!
+//! `drawn` has support for debugging through the [`tracing`](https://crates.io/crates/tracing) crate.
+//! `tracing` is added to the project by default; to enable logging use the
+//! [`tracing-subscriber`](https://crates.io/crates/tracing-subscriber)
+//! crate:
+//!
+//! ```rust
+//! use drawn::prelude::*;
+//!
+//! fn main() -> std::io::Result<> {
+//!     tracing_subscriber::fmt()
+//!         .with_max_level(tracing::Level::DEBUG)
+//!         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+//!         .init();
+//!
+//!     let mut new = Svg::default().size(100.0,100.0);
+//!     /*--snip--*/
 //! ```
 
 #[macro_use]
