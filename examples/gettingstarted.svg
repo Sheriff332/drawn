@@ -1,0 +1,7 @@
+<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+<rect width="300" height="200" fill="#ff0000ff" />
+<circle cx="150" cy="100" r="80" fill="#00ff00ff" />
+<text x="150" y="125" fill="#ffffffff" font-size="60" text-anchor="middle">
+<tspan>SVG</tspan>
+</text>
+</svg>
