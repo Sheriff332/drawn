@@ -9,9 +9,11 @@ readme = "README.md"
 keywords = ["svg", "graphics", "vector", "canvas", "drawing"]
 categories = ["graphics", "multimedia::images", "rendering"]
 exclude = [
-    "/*.png",
-    "/*.svg",
-    "/.idea/*"
+    "*.svg",
+    ".github/",
+    "*.png",
+    "/.idea/*",
+    ".gitignore"
 ]
 
 [dependencies]
