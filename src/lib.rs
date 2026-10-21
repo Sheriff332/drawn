@@ -501,12 +501,12 @@ impl Properties {
 
 #[derive(Clone, Default)]
 pub struct Properties {
-    pub id: Option<String>,
-    pub link: Option<Link>,
-    pub clip: bool,
-    pub clip_path: Option<String>,
-    pub transforms: Vec<Transform>,
-    pub style: Style,
+    pub(crate) id: Option<String>,
+    pub(crate) link: Option<Link>,
+    pub(crate) clip: bool,
+    pub(crate) clip_path: Option<String>,
+    pub(crate) transforms: Vec<Transform>,
+    pub(crate) style: Style,
 }
 
 pub trait ImplProperties {
@@ -809,8 +809,8 @@ impl Display for Color {
 
 #[derive(Clone, Copy)]
 pub struct Point {
-    pub x: f32,
-    pub y: f32,
+    pub(crate) x: f32,
+    pub(crate) y: f32,
 }
 
 impl Point {
