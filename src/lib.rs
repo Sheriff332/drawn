@@ -50,7 +50,7 @@
 //! ```rust
 //! use drawn::prelude::*;
 //!
-//! fn main() -> std::io::Result<> {
+//! fn main() -> std::io::Result<()> {
 //!     let mut new = Svg::default().size(100.0,100.0);
 //!
 //!     new.push(
@@ -78,7 +78,7 @@
 //! ```rust
 //! use drawn::prelude::*;
 //!
-//! fn main() -> std::io::Result<> {
+//! fn main() -> std::io::Result<()> {
 //!     tracing_subscriber::fmt()
 //!         .with_max_level(tracing::Level::DEBUG)
 //!         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
@@ -86,6 +86,8 @@
 //!
 //!     let mut new = Svg::default().size(100.0,100.0);
 //!     /*--snip--*/
+//!     Ok(())
+//! }
 //! ```
 
 #[macro_use]
