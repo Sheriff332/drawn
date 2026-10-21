@@ -1,7 +1,7 @@
 use drawn::prelude::*;
 use drawn::shapes::rect::*;
 
-fn main() -> Result<(), std::io::Error> {
+fn main() -> std::io::Result<()> {
     let mut newsvg = Svg::default().size(1000.0, 1000.0);
 
     let x = Rect::default()

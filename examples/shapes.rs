@@ -19,12 +19,12 @@ use drawn::prelude::*;
 
   <path d="M20,230 Q40,205 50,230 T90,230" fill="none" stroke="blue" stroke-width="5"/>
 </svg>
-*/
+ */
 
-fn main() -> Result<(), std::io::Error> {
-    let mut shapesvg = Svg::default().size(200.0,250.0);
+fn main() -> std::io::Result<()> {
+    let mut shapes = Svg::default().size(200.0, 250.0);
 
-    shapesvg.add(
+    shapes.add(
         Rect::default()
             .size(30.0,30.0)
             .at(10.0,10.0)
@@ -32,7 +32,7 @@ fn main() -> Result<(), std::io::Error> {
             .fill(Color::TRANSPARENT)
             .stroke_width(5.0),
     );
-    shapesvg.add(
+    shapes.add(
         Rect::default()
             .size(30.0,30.0)
             .at(60.0,10.0)
@@ -41,7 +41,7 @@ fn main() -> Result<(), std::io::Error> {
             .fill(Color::TRANSPARENT)
             .stroke_width(5.0),
     );
-    shapesvg.add(
+    shapes.add(
         Circle::default()
             .at(25.0,75.0)
             .r(20.0)
@@ -49,7 +49,7 @@ fn main() -> Result<(), std::io::Error> {
             .fill(Color::TRANSPARENT)
             .stroke_width(5.0),
     );
-    shapesvg.add(
+    shapes.add(
         Ellipse::default()
             .at(75.0,75.0)
             .r(20.0,5.0)
@@ -57,14 +57,14 @@ fn main() -> Result<(), std::io::Error> {
             .fill(Color::TRANSPARENT)
             .stroke_width(5.0),
     );
-    shapesvg.add(
+    shapes.add(
         Line::default()
             .start(10.0,110.0)
             .end(50.0,150.0)
             .stroke(Color::from_hex("#ffa500").unwrap()) //Orange
             .stroke_width(5.0),
     );
-    shapesvg.add(
+    shapes.add(
         Polyline::default()
             .point(60.0, 110.0)
             .point(65.0, 120.0)
@@ -79,7 +79,7 @@ fn main() -> Result<(), std::io::Error> {
             .fill(Color::TRANSPARENT) // dont even need this lol
             .stroke_width(5.0),
     );
-    shapesvg.add(
+    shapes.add(
         Polygon::default()
             .point(50.0, 160.0)
             .point(55.0, 180.0)
@@ -95,7 +95,7 @@ fn main() -> Result<(), std::io::Error> {
             .fill(Color::TRANSPARENT) // dont even need this lol
             .stroke_width(5.0),
     );
-    shapesvg.add(
+    shapes.add(
         Path::default()
             .M(&[Point::from(20.0,230.0)])
             .Q(40.0,205.0,50.0,230.0)
@@ -105,6 +105,6 @@ fn main() -> Result<(), std::io::Error> {
             .stroke_width(5.0),
 
     );
-    shapesvg.write_to_file("examples/shapesvg.svg")?;
+    shapes.write_to_file("examples/shapes.svg")?;
     Ok(())
 }

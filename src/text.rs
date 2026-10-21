@@ -168,7 +168,7 @@ impl Display for TextAnchor {
             f,
             "{}",
             match self {
-                TextAnchor::Center => "center",
+                TextAnchor::Center => "middle",
                 TextAnchor::Right => "right",
             }
         )?;
