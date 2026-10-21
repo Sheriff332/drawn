@@ -13,26 +13,31 @@
  */
 use drawn::prelude::*;
 fn main() -> std::io::Result<()> {
-    let mut svg = Svg::default().size(300.0,200.0);
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+        .init();
 
-    svg.add(
+    let mut svg = Svg::default().size(300.0, 200.0);
+
+    svg.push(
         Rect::default()
-            .size(300.0,200.0) //may add % later? IDK
-            .fill(Color::RED)
+            .size(300.0, 200.0) //may add % later? IDK
+            .fill(Color::RED),
     );
-    svg.add(
+    svg.push(
         Circle::default()
-            .at(150.0,100.0)
+            .at(150.0, 100.0)
             .r(80.0)
-            .fill(Color::GREEN)
+            .fill(Color::GREEN),
     );
-    svg.add(
+    svg.push(
         Text::default()
-            .add(TextSpan::from("SVG"))
-            .at(150.0,125.0)
+            .push(TextSpan::from("SVG"))
+            .at(150.0, 125.0)
             .font_size(60.0)
             .align_center()
-            .fill(Color::WHITE)
+            .fill(Color::WHITE),
     );
 
     svg.write_to_file("examples/gettingstarted.svg")?;

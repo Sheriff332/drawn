@@ -1,7 +1,11 @@
 use drawn::prelude::*;
-use drawn::shapes::rect::*;
 
 fn main() -> std::io::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+        .init();
+
     let mut newsvg = Svg::default().size(1000.0, 1000.0);
 
     let x = Rect::default()
@@ -14,14 +18,14 @@ fn main() -> std::io::Result<()> {
 
     let mut g = Group::default().opacity(1.0);
 
-    g.add(x.clone().at(200.0, 200.0));
-    g.add(x.clone().at(150.0, 200.0));
+    g.push(x.clone().at(200.0, 200.0));
+    g.push(x.clone().at(150.0, 200.0));
 
-    newsvg.add(g);
+    newsvg.push(g);
 
-    newsvg.add(Rect::default());
+    newsvg.push(Rect::default());
 
-    newsvg.add(
+    newsvg.push(
         ThreeBeans {
             properties: Properties::default().opacity(1.0).fill(Color::BLACK),
             bean1: x.clone().at(50.0, 50.0).link("/abc", true), //unrolls this!
@@ -43,11 +47,11 @@ fn main() -> std::io::Result<()> {
         .fill(Color::GREEN)
         .clip_path(&clip);
 
-    newsvg.add(clip);
+    newsvg.push(clip);
 
-    newsvg.add(test);
+    newsvg.push(test);
 
-    newsvg.add(
+    newsvg.push(
         Rect::default()
             .at(300.0, 400.0)
             .size(50.0, 50.0)
@@ -60,7 +64,7 @@ fn main() -> std::io::Result<()> {
             .transform(Transform::Matrix([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])),
     );
 
-    newsvg.add(
+    newsvg.push(
         Image::default()
             .href("examples/img.png")
             .at(500.0, 500.0)
@@ -69,32 +73,32 @@ fn main() -> std::io::Result<()> {
     );
 
     let mut insertsvg = Svg::default().size(500.0, 500.0);
-    insertsvg.add(
+    insertsvg.push(
         Rect::default()
             .size(16.0, 16.0)
             .round(5.0, 5.0)
             .at(200.0, 100.0)
             .fill(Color::BLUE),
     );
-    newsvg.add(insertsvg);
+    newsvg.push(insertsvg);
 
-    newsvg.add(
+    newsvg.push(
         Text::default()
             .at(400.0, 100.0)
-            .add(
+            .push(
                 TextSpan::from("abc")
                     .fill(Color::RED)
                     .oblique()
-                    .letter_spacing(10.0)
+                    .letter_spacing(10.0),
             )
-            .add(
+            .push(
                 TextSpan::from("Hello")
                     .text("Hello Now")
                     .bold()
                     .italic()
-                    .underline()
+                    .underline(),
             )
-            .stroke_width(0.5)
+            .stroke_width(0.5),
     );
 
     newsvg.write_to_file("examples/basic.svg")?;

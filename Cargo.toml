@@ -17,3 +17,7 @@ exclude = [
 
 [dependencies]
 base64 = "0.23.1"
+tracing = "0.1.44"
+
+[dev-dependencies]
+tracing-subscriber = "0.3.23"

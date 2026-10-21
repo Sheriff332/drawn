@@ -1,7 +1,9 @@
-use crate::{Element, ExpandElement, ImplProperties, Point, Properties, Link, Transform, StyleTarget};
+use crate::{
+    Element, ExpandElement, ImplProperties, Link, Point, Properties, StyleTarget, Transform,
+};
 
 #[derive(Clone, Default)]
-pub struct Polygon{
+pub struct Polygon {
     properties: Properties,
     points: Vec<Point>,
 }
@@ -13,8 +15,8 @@ impl Polygon {
             points,
         }
     }
-    pub fn point(mut self, x:f32, y:f32) -> Self {
-        self.points.push(Point::from(x,y));
+    pub fn point(mut self, x: f32, y: f32) -> Self {
+        self.points.push(Point::from(x, y));
         self
     }
 }
@@ -24,7 +26,12 @@ impl Element for Polygon {
         let mut expr = r#"<polygon"#.to_string();
         if !self.points.is_empty() {
             expr += r#" points=""#;
-            expr += &self.points.iter().map(|p| format!("{} {}", p.x, p.y)).collect::<Vec<_>>().join(" ");
+            expr += &self
+                .points
+                .iter()
+                .map(|p| format!("{} {}", p.x, p.y))
+                .collect::<Vec<_>>()
+                .join(" ");
             expr += r#"""#;
         }
         self.properties.to_raw_svg(&mut expr, StyleTarget::All);

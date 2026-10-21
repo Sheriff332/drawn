@@ -1,7 +1,9 @@
-use crate::{Element, ExpandElement, ImplProperties, Point, Properties, Link, Transform, StyleTarget};
+use crate::{
+    Element, ExpandElement, ImplProperties, Link, Point, Properties, StyleTarget, Transform,
+};
 
 #[derive(Clone, Default)]
-pub struct Polyline{
+pub struct Polyline {
     properties: Properties,
     points: Vec<Point>,
 }
@@ -13,8 +15,8 @@ impl Polyline {
             points,
         }
     }
-    pub fn point(mut self, x:f32, y:f32) -> Self {
-        self.points.push(Point::from(x,y));
+    pub fn point(mut self, x: f32, y: f32) -> Self {
+        self.points.push(Point::from(x, y));
         self
     }
 }
@@ -24,7 +26,12 @@ impl Element for Polyline {
         let mut expr = r#"<polyline"#.to_string();
         if !self.points.is_empty() {
             expr += r#" points=""#;
-            expr += &self.points.iter().map(|p| format!("{} {}", p.x, p.y)).collect::<Vec<_>>().join(" ");
+            expr += &self
+                .points
+                .iter()
+                .map(|p| format!("{} {}", p.x, p.y))
+                .collect::<Vec<_>>()
+                .join(" ");
             expr += r#"""#;
         }
         expr += r#" fill="none""#;

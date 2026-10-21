@@ -12,11 +12,11 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn at(mut self, x:f32, y:f32) -> Self {
-        self.pos = Some(Point::from(x,y));
+    pub fn at(mut self, x: f32, y: f32) -> Self {
+        self.pos = Some(Point::from(x, y));
         self
     }
-    pub fn add(mut self, span: TextSpan) -> Self {
+    pub fn push(mut self, span: TextSpan) -> Self {
         self.texts.push(span);
         self
     }
@@ -297,94 +297,172 @@ pub trait TextElement {
         self
     }
 
-    fn italic(mut self) -> Self where Self: Sized {
+    fn italic(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().font_style = Some(FontStyle::Italic);
         self
     }
-    fn oblique(mut self) -> Self where Self: Sized {
+    fn oblique(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().font_style = Some(FontStyle::Oblique);
         self
     }
-    fn default_font_style(mut self) -> Self where Self: Sized {
+    fn default_font_style(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().font_style = None;
         self
     }
 
-    fn underline(mut self) -> Self where Self: Sized {
+    fn underline(mut self) -> Self
+    where
+        Self: Sized,
+    {
         if self.get_font_properties_mut().text_decoration.is_none() {
             self.get_font_properties_mut().text_decoration = Some(TextDecoration::default());
         }
-        self.get_font_properties_mut().text_decoration.as_mut().unwrap().underline = true;
+        self.get_font_properties_mut()
+            .text_decoration
+            .as_mut()
+            .unwrap()
+            .underline = true;
         self
     }
-    fn remove_underline(mut self) -> Self where Self: Sized {
+    fn remove_underline(mut self) -> Self
+    where
+        Self: Sized,
+    {
         if self.get_font_properties_mut().text_decoration.is_some() {
-            self.get_font_properties_mut().text_decoration.as_mut().unwrap().underline = false;
+            self.get_font_properties_mut()
+                .text_decoration
+                .as_mut()
+                .unwrap()
+                .underline = false;
         }
         self
     }
-    fn line_through(mut self) -> Self where Self: Sized {
+    fn line_through(mut self) -> Self
+    where
+        Self: Sized,
+    {
         if self.get_font_properties_mut().text_decoration.is_none() {
             self.get_font_properties_mut().text_decoration = Some(TextDecoration::default());
         }
-        self.get_font_properties_mut().text_decoration.as_mut().unwrap().line_through = true;
+        self.get_font_properties_mut()
+            .text_decoration
+            .as_mut()
+            .unwrap()
+            .line_through = true;
         self
     }
-    fn remove_line_through(mut self) -> Self where Self: Sized {
+    fn remove_line_through(mut self) -> Self
+    where
+        Self: Sized,
+    {
         if self.get_font_properties_mut().text_decoration.is_some() {
-            self.get_font_properties_mut().text_decoration.as_mut().unwrap().line_through = false;
+            self.get_font_properties_mut()
+                .text_decoration
+                .as_mut()
+                .unwrap()
+                .line_through = false;
         }
         self
     }
-    fn overline(mut self) -> Self where Self: Sized {
+    fn overline(mut self) -> Self
+    where
+        Self: Sized,
+    {
         if self.get_font_properties_mut().text_decoration.is_none() {
             self.get_font_properties_mut().text_decoration = Some(TextDecoration::default());
         }
-        self.get_font_properties_mut().text_decoration.as_mut().unwrap().overline = true;
+        self.get_font_properties_mut()
+            .text_decoration
+            .as_mut()
+            .unwrap()
+            .overline = true;
         self
     }
-    fn remove_overline(mut self) -> Self where Self: Sized {
+    fn remove_overline(mut self) -> Self
+    where
+        Self: Sized,
+    {
         if self.get_font_properties_mut().text_decoration.is_some() {
-            self.get_font_properties_mut().text_decoration.as_mut().unwrap().overline = false;
+            self.get_font_properties_mut()
+                .text_decoration
+                .as_mut()
+                .unwrap()
+                .overline = false;
         }
         self
     }
-    fn remove_text_decoration(mut self) -> Self where Self: Sized {
+    fn remove_text_decoration(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().text_decoration = None;
         self
     }
 
-    fn letter_spacing(mut self, value: f32) -> Self where Self: Sized {
+    fn letter_spacing(mut self, value: f32) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().letter_spacing = Some(value);
         self
     }
-    fn remove_letter_spacing(mut self) -> Self where Self: Sized {
+    fn remove_letter_spacing(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().letter_spacing = None;
         self
     }
 
-    fn align_center(mut self) -> Self where Self: Sized {
+    fn align_center(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().text_anchor = Some(TextAnchor::Center);
         self
     }
-    fn align_right(mut self) -> Self where Self: Sized {
+    fn align_right(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().text_anchor = Some(TextAnchor::Right);
         self
     }
-    fn align_left(mut self) -> Self where Self: Sized {
+    fn align_left(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().text_anchor = None;
         self
     }
 
-    fn baseline_middle(mut self) -> Self where Self: Sized {
+    fn baseline_middle(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().dominant_baseline = Some(DominantBaseline::Middle);
         self
     }
-    fn baseline_hanging(mut self) -> Self where Self: Sized {
+    fn baseline_hanging(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().dominant_baseline = Some(DominantBaseline::Hanging);
         self
     }
-    fn baseline_auto(mut self) -> Self where Self: Sized {
+    fn baseline_auto(mut self) -> Self
+    where
+        Self: Sized,
+    {
         self.get_font_properties_mut().dominant_baseline = None;
         self
     }

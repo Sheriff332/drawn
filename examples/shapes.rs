@@ -22,49 +22,54 @@ use drawn::prelude::*;
  */
 
 fn main() -> std::io::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+        .init();
+
     let mut shapes = Svg::default().size(200.0, 250.0);
 
-    shapes.add(
+    shapes.push(
         Rect::default()
-            .size(30.0,30.0)
-            .at(10.0,10.0)
+            .size(30.0, 30.0)
+            .at(10.0, 10.0)
             .stroke(Color::BLACK)
-            .fill(Color::TRANSPARENT)
+            .fill(Color::NONE)
             .stroke_width(5.0),
     );
-    shapes.add(
+    shapes.push(
         Rect::default()
-            .size(30.0,30.0)
-            .at(60.0,10.0)
+            .size(30.0, 30.0)
+            .at(60.0, 10.0)
             .round(10.0, 10.0)
             .stroke(Color::BLACK)
-            .fill(Color::TRANSPARENT)
+            .fill(Color::NONE)
             .stroke_width(5.0),
     );
-    shapes.add(
+    shapes.push(
         Circle::default()
-            .at(25.0,75.0)
+            .at(25.0, 75.0)
             .r(20.0)
             .stroke(Color::RED)
-            .fill(Color::TRANSPARENT)
+            .fill(Color::NONE)
             .stroke_width(5.0),
     );
-    shapes.add(
+    shapes.push(
         Ellipse::default()
-            .at(75.0,75.0)
-            .r(20.0,5.0)
+            .at(75.0, 75.0)
+            .r(20.0, 5.0)
             .stroke(Color::RED)
-            .fill(Color::TRANSPARENT)
+            .fill(Color::NONE)
             .stroke_width(5.0),
     );
-    shapes.add(
+    shapes.push(
         Line::default()
-            .start(10.0,110.0)
-            .end(50.0,150.0)
+            .start(10.0, 110.0)
+            .end(50.0, 150.0)
             .stroke(Color::from_hex("#ffa500").unwrap()) //Orange
             .stroke_width(5.0),
     );
-    shapes.add(
+    shapes.push(
         Polyline::default()
             .point(60.0, 110.0)
             .point(65.0, 120.0)
@@ -76,10 +81,10 @@ fn main() -> std::io::Result<()> {
             .point(95.0, 150.0)
             .point(100.0, 145.0)
             .stroke(Color::from_hex("#ffa500").unwrap()) //Orange
-            .fill(Color::TRANSPARENT) // dont even need this lol
+            .fill(Color::NONE)
             .stroke_width(5.0),
     );
-    shapes.add(
+    shapes.push(
         Polygon::default()
             .point(50.0, 160.0)
             .point(55.0, 180.0)
@@ -92,18 +97,17 @@ fn main() -> std::io::Result<()> {
             .point(30.0, 180.0)
             .point(45.0, 180.0)
             .stroke(Color::GREEN) //Orange
-            .fill(Color::TRANSPARENT) // dont even need this lol
+            .fill(Color::NONE)
             .stroke_width(5.0),
     );
-    shapes.add(
+    shapes.push(
         Path::default()
-            .M(&[Point::from(20.0,230.0)])
-            .Q(40.0,205.0,50.0,230.0)
-            .T(90.0,230.0)
-            .fill(Color::TRANSPARENT)
+            .M(&[Point::from(20.0, 230.0)])
+            .Q(40.0, 205.0, 50.0, 230.0)
+            .T(90.0, 230.0)
+            .fill(Color::NONE)
             .stroke(Color::BLUE)
             .stroke_width(5.0),
-
     );
     shapes.write_to_file("examples/shapes.svg")?;
     Ok(())

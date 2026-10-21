@@ -1,4 +1,6 @@
-use crate::{Element, ExpandElement, ImplProperties, Point, Properties, Link, Transform, StyleTarget};
+use crate::{
+    Element, ExpandElement, ImplProperties, Link, Point, Properties, StyleTarget, Transform,
+};
 
 #[derive(Clone, Default)]
 pub struct Circle {
@@ -8,11 +10,11 @@ pub struct Circle {
 }
 
 impl Circle {
-    pub fn at(mut self, cx:f32, cy:f32) -> Self {
-        self.center = Some(Point::from(cx,cy));
+    pub fn at(mut self, cx: f32, cy: f32) -> Self {
+        self.center = Some(Point::from(cx, cy));
         self
     }
-    pub fn r(mut self, r:f32) -> Self {
+    pub fn r(mut self, r: f32) -> Self {
         self.radius = Some(r);
         self
     }

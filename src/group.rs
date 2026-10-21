@@ -21,7 +21,7 @@ impl Element for Group {
 impl_properties!(Group);
 
 impl Group {
-    pub fn add<E: Element + 'static>(&mut self, element: E) -> &mut Self {
+    pub fn push<E: Element + 'static>(&mut self, element: E) -> &mut Self {
         self.elements.push(Box::new(element));
         self
     }

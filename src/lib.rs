@@ -53,7 +53,7 @@
 //! fn main() -> Result<(), std::io::Error> {
 //!     let mut new = Svg::default().size(100.0,100.0);
 //!
-//!     new.add(
+//!     new.push(
 //!         Rect::default()
 //!             .size(50.0, 50.0)
 //!             .round(5.0, 5.0)
@@ -95,12 +95,13 @@ impl Svg {
         self.height = Some(height);
         self
     }
-    pub fn add<E: Element + 'static>(&mut self, element: E) -> &mut Self {
+    pub fn push<E: Element + 'static>(&mut self, element: E) -> &mut Self {
         self.elements.push(Box::new(element));
         self
     }
 
-    pub fn write_to_file(&mut self, filename: &str) -> Result<(), io::Error> {
+    #[tracing::instrument(skip(self), err)]
+    pub fn write_to_file(&mut self, filename: &str) -> io::Result<()> {
         let mut writer = io::BufWriter::new(fs::File::create(filename)?);
         write!(&mut writer, "<svg")?;
         if let Some(viewbox) = self.viewbox {
@@ -109,18 +110,28 @@ impl Svg {
                 r#" viewBox="{} {} {} {}""#,
                 viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y
             )?;
+        } else {
+            tracing::debug!("No viewbox set, using default")
         }
         if let Some(width) = self.width {
             write!(&mut writer, r#" width="{}""#, width)?;
+        } else {
+            tracing::debug!("No width set, using default")
         }
         if let Some(height) = self.height {
             write!(&mut writer, r#" height="{}""#, height)?;
+        } else {
+            tracing::debug!("No height set, using default")
         }
         writeln!(&mut writer, r#" xmlns="http://www.w3.org/2000/svg">"#)?;
         for element in &mut self.elements {
             let clip = element.get_clip() && element.get_id().is_some();
             if clip {
+                tracing::info!(
+                    "Element contains clip; all properties of child nodes will be erased."
+                );
                 unroll_and_erase(element);
+                tracing::info!("Skipping link checks...");
             }
             let link_inside = if clip {
                 false
@@ -142,6 +153,7 @@ impl Svg {
             }
             if clip && let Some(id) = element.get_id() {
                 writeln!(&mut writer, "<defs>")?;
+                tracing::info!("Using ID for clipPath");
                 writeln!(&mut writer, r#"<clipPath id="{}">"#, id)?;
             }
             let mut lines = Vec::new();
@@ -174,18 +186,28 @@ impl Element for Svg {
                 viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y
             )
             .as_str();
+        } else {
+            tracing::debug!("No viewbox set, using default")
         }
         if let Some(width) = self.width {
             out += format!(r#" width="{}""#, width).as_str();
+        } else {
+            tracing::debug!("No width set, using default")
         }
         if let Some(height) = self.height {
             out += format!(r#" height="{}""#, height).as_str();
+        } else {
+            tracing::debug!("No height set, using default")
         }
         out += r#" xmlns="http://www.w3.org/2000/svg">"#;
         for element in &mut self.elements {
             let clip = element.get_clip() && element.get_id().is_some();
             if clip {
+                tracing::info!(
+                    "Element contains clip; all properties of child nodes will be erased."
+                );
                 unroll_and_erase(element);
+                tracing::info!("Skipping link checks...");
             }
             let link_inside = if clip {
                 false
@@ -207,6 +229,7 @@ impl Element for Svg {
             }
             if clip && let Some(id) = element.get_id() {
                 out += "<defs>";
+                tracing::info!("Using ID for clipPath");
                 out += format!(r#"<clipPath id="{}">"#, id).as_str();
             }
             let mut lines = Vec::new();
@@ -241,6 +264,10 @@ fn unroll_into(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: boo
                     ""
                 }
             ));
+        }
+        if element.get_link().is_some() && link_inside {
+            tracing::warn!("Element contains link while child element also contains link");
+            tracing::warn!("Nested links are not allowed, skipping...");
         }
     } else {
         link_inside = false;
@@ -353,63 +380,97 @@ impl Properties {
             }
             *expr += r#"""#;
         }
-        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Polyline].contains(&target))
-            && let Some(fill) = self.style.fill
-        {
-            *expr += format!(r#" fill="{}""#, fill).as_str();
+        if let Some(fill) = self.style.fill {
+            if [StyleTarget::Image, StyleTarget::Line, StyleTarget::Polyline].contains(&target) {
+                tracing::warn!(
+                    "Property fill cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(r#" fill="{}""#, fill).as_str();
+            }
         }
 
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke) = self.style.stroke
-        {
-            *expr += format!(r#" stroke="{}""#, stroke).as_str();
+        if let Some(stroke) = self.style.stroke {
+            if [StyleTarget::Image].contains(&target) {
+                tracing::warn!(
+                    "Property stroke cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(r#" stroke="{}""#, stroke).as_str();
+            }
         }
 
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke_width) = self.style.stroke_width
-        {
-            *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
+        if let Some(stroke_width) = self.style.stroke_width {
+            if [StyleTarget::Image].contains(&target) {
+                tracing::warn!(
+                    "Property stroke-width cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(r#" stroke-width="{}""#, stroke_width).as_str();
+            }
         }
 
         if let Some(opacity) = self.style.opacity {
             *expr += format!(r#" opacity="{}""#, opacity).as_str();
         }
 
-        if (![StyleTarget::Image].contains(&target)) && !self.style.stroke_dasharray.is_empty() {
-            *expr += format!(
-                r#" stroke-dasharray="{}""#,
-                self.style
-                    .stroke_dasharray
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-            .as_str();
+        if !self.style.stroke_dasharray.is_empty() {
+            if [StyleTarget::Image].contains(&target) {
+                tracing::warn!(
+                    "Property stroke-dasharray cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(
+                    r#" stroke-dasharray="{}""#,
+                    self.style
+                        .stroke_dasharray
+                        .iter()
+                        .map(|s| s.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+                .as_str();
+            }
         }
 
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke_linecap) = &self.style.stroke_linecap
-        {
-            *expr += format!(r#" stroke-linecap="{}""#, stroke_linecap).as_str();
+        if let Some(stroke_linecap) = &self.style.stroke_linecap {
+            if [StyleTarget::Image].contains(&target) {
+                tracing::warn!(
+                    "Property stroke-linecap cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(r#" stroke-linecap="{}""#, stroke_linecap).as_str();
+            }
         }
 
-        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Ellipse].contains(&target))
-            && let Some(stroke_linejoin) = &self.style.stroke_linejoin
-        {
-            *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
+        if let Some(stroke_linejoin) = &self.style.stroke_linejoin {
+            if [StyleTarget::Image, StyleTarget::Line, StyleTarget::Ellipse].contains(&target) {
+                tracing::warn!(
+                    "Property stroke-linejoin cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(r#" stroke-linejoin="{}""#, stroke_linejoin).as_str();
+            }
         }
 
-        if (![StyleTarget::Image, StyleTarget::Line, StyleTarget::Polyline].contains(&target))
-            && let Some(fill_opacity) = self.style.fill_opacity
-        {
-            *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
+        if let Some(fill_opacity) = self.style.fill_opacity {
+            if [StyleTarget::Image, StyleTarget::Line, StyleTarget::Polyline].contains(&target) {
+                tracing::warn!(
+                    "Property fill-opacity cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(r#" fill-opacity="{}""#, fill_opacity).as_str();
+            }
         }
 
-        if (![StyleTarget::Image].contains(&target))
-            && let Some(stroke_opacity) = self.style.stroke_opacity
-        {
-            *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
+        if let Some(stroke_opacity) = self.style.stroke_opacity {
+            if [StyleTarget::Image].contains(&target) {
+                tracing::warn!(
+                    "Property stroke-opacity cannot be used by the following element, skipping..."
+                );
+            } else {
+                *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
+            }
         }
 
         expr
@@ -637,6 +698,7 @@ pub struct Color {
     g: u8,
     b: u8,
     a: u8,
+    none: bool,
 }
 
 impl Color {
@@ -645,43 +707,56 @@ impl Color {
         g: 0,
         b: 0,
         a: 255,
+        none: false,
     };
     pub const WHITE: Color = Color {
         r: 255,
         g: 255,
         b: 255,
         a: 255,
+        none: false,
     };
     pub const TRANSPARENT: Color = Color {
         r: 0,
         g: 0,
         b: 0,
         a: 0,
+        none: false,
+    };
+    pub const NONE: Color = Color {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 0,
+        none: true,
     };
     pub const RED: Color = Color {
         r: 255,
         g: 0,
         b: 0,
         a: 255,
+        none: false,
     };
     pub const GREEN: Color = Color {
         r: 0,
         g: 255,
         b: 0,
         a: 255,
+        none: false,
     };
     pub const BLUE: Color = Color {
         r: 0,
         g: 0,
         b: 255,
         a: 255,
+        none: false,
     };
 
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b, a: 255 }
+        Self { r, g, b, a: 255, none: false }
     }
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
-        Color { r, g, b, a }
+        Color { r, g, b, a, none: false }
     }
     pub fn from_hex(hex: &str) -> Option<Self> {
         let hex = hex.trim_start_matches('#');
@@ -701,7 +776,12 @@ impl Color {
 
 impl Display for Color {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_hex())
+        if self.none {
+            write!(f, "none")?;
+        } else {
+            write!(f, "{}", self.to_hex())?;
+        }
+        Ok(())
     }
 }
 
@@ -806,7 +886,7 @@ pub mod prelude {
     pub use crate::*;
     pub use group::*;
     pub use image::*;
-    pub use text::*;
     pub use path::*;
-    pub use shapes::{rect::*, circle::*, ellipse::*, line::*, polygon::*, polyline::*};
+    pub use shapes::{circle::*, ellipse::*, line::*, polygon::*, polyline::*, rect::*};
+    pub use text::*;
 }
