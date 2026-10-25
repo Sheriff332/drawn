@@ -39,10 +39,10 @@ If you want to use any such methods yourself which are not available here, feel 
 ```rust
 use drawn::prelude::*;
 
-fn main() -> Result<(), std::io::Error> {
+fn main() -> std::io::Result<()> {
     let mut new = Svg::default().size(100.0,100.0);
     
-    new.add(
+    new.push(
         Rect::default()
             .size(50.0, 50.0)
             .round(5.0, 5.0)
