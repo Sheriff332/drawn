@@ -9,11 +9,7 @@ pub struct Group {
 impl Element for Group {
     fn expand(&mut self) -> ExpandElement {
         ExpandElement::Children({
-            let mut out = std::mem::take(&mut self.elements);
-            for element in &mut out {
-                element.get_properties_mut().style = self.properties.style.clone();
-            }
-            out
+            std::mem::take(&mut self.elements)
         })
     }
 }
