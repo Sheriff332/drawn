@@ -51,13 +51,20 @@ macro_rules! impl_properties {
                 self.properties.clip = false;
             }
 
-            fn clip_path(mut self, element: &dyn Element) -> Self
+            // fn clip_path(mut self, element: &dyn Element) -> Self
+            // where
+            //     Self: Sized,
+            // {
+            //     if let Some(id) = element.get_id() {
+            //         self.properties.clip_path = Some(id.to_string());
+            //     }
+            //     self
+            // }
+            fn clip_path(mut self, id: &str) -> Self
             where
                 Self: Sized,
             {
-                if let Some(id) = element.get_id() {
-                    self.properties.clip_path = Some(id.to_string());
-                }
+                self.properties.clip_path = Some(id.to_string());
                 self
             }
 

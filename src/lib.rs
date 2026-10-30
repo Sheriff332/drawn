@@ -97,10 +97,11 @@ pub mod image;
 pub mod path;
 pub mod shapes;
 pub mod text;
+pub mod optimizer;
 
 use std::fmt::{Display, Formatter};
-use std::io::Write;
 use std::{fs, io};
+use std::ops::Deref;
 
 #[derive(Default)]
 pub struct Svg {
@@ -122,92 +123,15 @@ impl Svg {
         self
     }
 
-    #[tracing::instrument(skip(self), err)]
-    pub fn write_to_file(&mut self, filename: &str) -> io::Result<()> {
-        let mut writer = io::BufWriter::new(fs::File::create(filename)?);
-        write!(&mut writer, "<svg")?;
-        if let Some(viewbox) = self.viewbox {
-            write!(
-                &mut writer,
-                r#" viewBox="{} {} {} {}""#,
-                viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y
-            )?;
-        } else {
-            tracing::debug!("No viewbox set, using default")
-        }
-        if let Some(width) = self.width {
-            write!(&mut writer, r#" width="{}""#, width)?;
-        } else {
-            tracing::debug!("No width set, using default")
-        }
-        if let Some(height) = self.height {
-            write!(&mut writer, r#" height="{}""#, height)?;
-        } else {
-            tracing::debug!("No height set, using default")
-        }
-        writeln!(&mut writer, r#" xmlns="http://www.w3.org/2000/svg">"#)?;
-        for element in &mut self.elements {
-            let clip = element.get_clip() && element.get_id().is_some();
-            if clip {
-                tracing::info!(
-                    "Element contains clip; all properties of child nodes will be erased."
-                );
-                unroll_and_erase(element);
-                tracing::info!("Skipping link checks...");
-            }
-            let link_inside = if clip {
-                false
-            } else {
-                unroll_link_check(element)
-            };
-            let linked = element.get_link().is_some() && !link_inside;
-            if linked {
-                writeln!(
-                    &mut writer,
-                    r#"<a href="{}"{}>"#,
-                    element.get_link().unwrap().link,
-                    if element.get_link().unwrap().new_tab {
-                        r#" target="_blank" rel="noopener""#
-                    } else {
-                        ""
-                    }
-                )?;
-            }
-            if clip && let Some(id) = element.get_id() {
-                writeln!(&mut writer, "<defs>")?;
-                tracing::info!("Using ID for clipPath");
-                writeln!(&mut writer, r#"<clipPath id="{}">"#, id)?;
-            }
-            let mut lines = Vec::new();
-            unroll_into(element, &mut lines, link_inside);
-            for line in lines {
-                writeln!(writer, "{}", line)?;
-            }
-            if clip {
-                writeln!(&mut writer, "</clipPath>")?;
-                writeln!(&mut writer, "</defs>")?;
-            }
-            if linked {
-                writeln!(&mut writer, "</a>")?;
-            }
-        }
-        writeln!(writer, "</svg>")?;
-        Ok(())
-    }
-}
-
-impl_properties!(Svg);
-
-impl Element for Svg {
-    fn expand(&mut self) -> ExpandElement {
+    pub fn write(&mut self) -> String {
         let mut out = String::new();
         out += "<svg";
         if let Some(viewbox) = self.viewbox {
             out += format!(
                 r#" viewBox="{} {} {} {}""#,
-                viewbox.0.x, viewbox.0.y, viewbox.0.x, viewbox.0.y
+                viewbox.0.x, viewbox.0.y, viewbox.1.x, viewbox.1.y
             )
-            .as_str();
+                .as_str();
         } else {
             tracing::debug!("No viewbox set, using default")
         }
@@ -221,100 +145,135 @@ impl Element for Svg {
         } else {
             tracing::debug!("No height set, using default")
         }
-        out += r#" xmlns="http://www.w3.org/2000/svg">"#;
-        for element in &mut self.elements {
-            let clip = element.get_clip() && element.get_id().is_some();
-            if clip {
-                tracing::info!(
-                    "Element contains clip; all properties of child nodes will be erased."
+        out += concat!(r#" xmlns="http://www.w3.org/2000/svg">"#, "\n");
+        let clip = self.get_clip() && self.get_id().is_some();
+        if clip {
+            tracing::info!(
+                    "self contains clip; all properties of child nodes will be erased."
                 );
-                unroll_and_erase(element);
-                tracing::info!("Skipping link checks...");
-            }
-            let link_inside = if clip {
-                false
-            } else {
-                unroll_link_check(element)
-            };
-            let linked = element.get_link().is_some() && !link_inside;
-            if linked {
-                out += format!(
-                    r#"<a href="{}"{}>"#,
-                    element.get_link().unwrap().link,
-                    if element.get_link().unwrap().new_tab {
-                        r#" target="_blank" rel="noopener""#
-                    } else {
-                        ""
-                    }
-                )
+            unroll_and_erase(self);
+            tracing::info!("Skipping link checks...");
+        }
+        let linked = self.get_link().is_some() && (clip || !unroll_link_check(self));
+        if linked {
+            out += format!(
+                r#"<a href="{}"{}>"#,
+                self.get_link().unwrap().link,
+                if self.get_link().unwrap().new_tab {
+                    concat!(r#" target="_blank" rel="noopener""#, "\n")
+                } else {
+                    "\n"
+                }
+            )
                 .as_str();
-            }
-            if clip && let Some(id) = element.get_id() {
-                out += "<defs>";
-                tracing::info!("Using ID for clipPath");
-                out += format!(r#"<clipPath id="{}">"#, id).as_str();
-            }
+        }
+        if clip && let Some(id) = self.get_id() {
+            out += "<defs>";
+            tracing::info!("Using ID for clipPath");
+            out += format!(r#"<clipPath id="{}">"#, id).as_str();
+        }
+        let mut properties = String::new();
+        self.properties.to_raw_svg(&mut properties, StyleTarget::All);
+        if !properties.is_empty() {
+            out += format!("<g {}>", properties).as_str();
+        }
+        for element in &mut self.elements {
+            let has_clip = element.get_clip();
+            let element = element.as_mut();
             let mut lines = Vec::new();
-            unroll_into(element, &mut lines, link_inside);
+            unroll_into(element, &mut lines, has_clip);
             for line in lines {
-                out += line.as_str();
-            }
-            if clip {
-                out += "</clipPath>";
-                out += "</defs>";
-            }
-            if linked {
-                out += "</a>";
+                out += (line + "\n").as_str();
             }
         }
+        if !properties.is_empty() {
+            out += "</g>";
+        }
+        if clip {
+            out += "</clipPath>";
+            out += "</defs>";
+        }
+        if linked {
+            out += "</a>";
+        }
         out += "</svg>";
-        ExpandElement::RawSvg(out)
+        out
+    }
+
+    #[tracing::instrument(skip(self), err)]
+    pub fn write_to_file(&mut self, filename: &str) -> io::Result<()> {
+        fs::write(filename, self.write())
     }
 }
 
-fn unroll_into(element: &mut Box<dyn Element>, out: &mut Vec<String>, check: bool) {
-    let link_inside;
-    if check {
-        link_inside = unroll_link_check(element);
-        if element.get_link().is_some() && !link_inside {
-            out.push(format!(
-                r#"<a href="{}"{}>"#,
-                element.get_link().unwrap().link,
-                if element.get_link().unwrap().new_tab {
-                    r#" target="_blank" rel="noopener""#
-                } else {
-                    ""
-                }
-            ));
+impl_properties!(Svg);
+
+impl Element for Svg {
+    fn expand(&mut self) -> ExpandElement {
+        ExpandElement::Children({
+            std::mem::take(&mut self.elements)
+        })
+    }
+}
+
+fn unroll_into(element: &mut dyn Element, out: &mut Vec<String>, check_clip: bool) -> bool { //return is link check
+    let clip = element.get_clip();
+    if check_clip {
+        element.get_properties_mut().style = Style::default();
+        element.get_properties_mut().link = None;
+    }
+    let linked = element.get_link().is_some();
+    let mut child_linked = false;
+    let mut child_lines = Vec::new();
+
+    match element.expand() {
+        ExpandElement::Children(vec) => {
+            let style = &element.get_properties_mut().style;
+            for mut element in vec {
+                element.get_properties_mut().style.inherit_from(style);
+                child_linked |= unroll_into(&mut *element, &mut child_lines, check_clip || clip);
+            }
         }
-        if element.get_link().is_some() && link_inside {
+        ExpandElement::RawSvg(line) => {
+            child_lines.push(line);
+        }
+    }
+
+    if linked && !child_linked {
+        out.push(format!(
+            r#"<a href="{}"{}>"#,
+            element.get_link().unwrap().link,
+            if element.get_link().unwrap().new_tab {
+                r#" target="_blank" rel="noopener""#
+            } else {
+                ""
+            }
+        ));
+        out.extend(child_lines);
+        out.push("</a>".to_string());
+        true
+    } else {
+        if clip && let Some(id) = element.get_id() {
+            out.push("<defs>".to_string());
+            tracing::info!("Using ID for clipPath");
+            out.push(format!(r#"<clipPath id="{}">"#, id));
+        }
+        if linked && child_linked {
             tracing::warn!("Element contains link while child element also contains link");
             tracing::warn!("Nested links are not allowed, skipping...");
         }
-    } else {
-        link_inside = false;
-    }
-    match element.expand() {
-        ExpandElement::Children(vec) => {
-            let pstyle = &element.get_properties_mut().style;
-            for mut element in vec {
-                element.get_properties_mut().style.inherit_from(pstyle);
-                unroll_into(&mut element, out, link_inside);
-            }
+        out.extend(child_lines);
+        if clip && element.get_id().is_some() {
+            out.push("</clipPath>".to_string());
+            out.push("</defs>".to_string());
         }
-        ExpandElement::RawSvg(str) => {
-            out.push(str);
-        }
-    }
-    if element.get_link().is_some() && !link_inside {
-        out.push("</a>".to_string());
+        child_linked
     }
 }
-
-fn unroll_link_check(element: &mut Box<dyn Element>) -> bool {
+fn unroll_link_check(element: &mut dyn Element) -> bool {
     if let ExpandElement::Children(vec) = element.expand() {
         for mut element in vec {
-            if element.get_link().is_some() || unroll_link_check(&mut element) {
+            if element.get_link().is_some() || unroll_link_check(&mut *element) {
                 return true;
             }
         }
@@ -322,11 +281,11 @@ fn unroll_link_check(element: &mut Box<dyn Element>) -> bool {
     false
 }
 
-fn unroll_and_erase(element: &mut Box<dyn Element>) {
+fn unroll_and_erase(element: &mut dyn Element) {
     if let ExpandElement::Children(vec) = element.expand() {
         for mut element in vec {
             *element.get_properties_mut() = Properties::default();
-            unroll_and_erase(&mut element);
+            unroll_and_erase(&mut *element);
         }
     }
 }
@@ -386,7 +345,7 @@ impl Style {
 }
 
 impl Properties {
-    fn to_raw_svg<'a>(&self, expr: &'a mut String, target: StyleTarget) -> &'a mut String {
+    fn to_raw_svg(&self, expr: &mut String, target: StyleTarget) {
         if !self.clip
             && let Some(id) = &self.id
         {
@@ -494,19 +453,17 @@ impl Properties {
                 *expr += format!(r#" stroke-opacity="{}""#, stroke_opacity).as_str();
             }
         }
-
-        expr
     }
 }
 
 #[derive(Clone, Default)]
 pub struct Properties {
-    pub(crate) id: Option<String>,
-    pub(crate) link: Option<Link>,
-    pub(crate) clip: bool,
-    pub(crate) clip_path: Option<String>,
-    pub(crate) transforms: Vec<Transform>,
-    pub(crate) style: Style,
+    pub id: Option<String>,
+    pub link: Option<Link>,
+    pub clip: bool,
+    pub clip_path: Option<String>,
+    pub transforms: Vec<Transform>,
+    pub style: Style,
 }
 
 pub trait ImplProperties {
@@ -581,42 +538,70 @@ pub trait ImplProperties {
         self.get_properties_mut().style.opacity = None;
         self
     }
-    fn stroke_dasharray(mut self, sd: Vec<f32>) -> Self
+    fn dasharray(mut self, sd: Vec<f32>) -> Self
     where
         Self: Sized,
     {
         self.get_properties_mut().style.stroke_dasharray = sd;
         self
     }
-    fn remove_stroke_dasharray(mut self) -> Self
+    fn remove_dasharray(mut self) -> Self
     where
         Self: Sized,
     {
         self.get_properties_mut().style.stroke_dasharray = Vec::new();
         self
     }
-    fn stroke_linecap(mut self, lc: LineCap) -> Self
+    fn linecap_butt(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_properties_mut().style.stroke_linecap = Some(lc);
+        self.get_properties_mut().style.stroke_linecap = Some(LineCap::Butt);
         self
     }
-    fn remove_stroke_linecap(mut self) -> Self
+    fn linecap_round(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_properties_mut().style.stroke_linecap = Some(LineCap::Round);
+        self
+    }
+    fn linecap_square(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_properties_mut().style.stroke_linecap = Some(LineCap::Square);
+        self
+    }
+    fn remove_linecap(mut self) -> Self
     where
         Self: Sized,
     {
         self.get_properties_mut().style.stroke_linecap = None;
         self
     }
-    fn stroke_linejoin(mut self, line_join: LineJoin) -> Self
+    fn linejoin_bevel(mut self) -> Self
     where
         Self: Sized,
     {
-        self.get_properties_mut().style.stroke_linejoin = Some(line_join);
+        self.get_properties_mut().style.stroke_linejoin = Some(LineJoin::Bevel);
         self
     }
-    fn remove_stroke_linejoin(mut self) -> Self
+    fn linejoin_miter(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_properties_mut().style.stroke_linejoin = Some(LineJoin::Miter);
+        self
+    }
+    fn linejoin_round(mut self) -> Self
+    where
+        Self: Sized,
+    {
+        self.get_properties_mut().style.stroke_linejoin = Some(LineJoin::Round);
+        self
+    }
+    fn remove_linejoin(mut self) -> Self
     where
         Self: Sized,
     {
@@ -681,7 +666,7 @@ pub trait ImplProperties {
         self
     }
     fn remove_clip(&mut self) {}
-    fn clip_path(self, _element: &dyn Element) -> Self
+    fn clip_path(self, _element: &str) -> Self
     where
         Self: Sized,
     {
@@ -820,7 +805,7 @@ impl Point {
 }
 
 #[derive(Clone, Copy)]
-pub enum LineCap {
+pub(crate) enum LineCap {
     Butt,
     Round,
     Square,

@@ -2,8 +2,8 @@ use crate::*;
 
 #[derive(Default)]
 pub struct Group {
-    properties: Properties,
-    elements: Vec<Box<dyn Element>>,
+    pub(crate) properties: Properties,
+    pub(crate) elements: Vec<Box<dyn Element>>,
 }
 
 impl Element for Group {
