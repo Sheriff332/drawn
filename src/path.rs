@@ -153,8 +153,7 @@ impl Element for Path {
                 .join(" ");
             expr += r#"""#;
         }
-        expr += r#" fill="none""#;
-        self.properties.to_raw_svg(&mut expr, StyleTarget::Polyline);
+        self.properties.to_raw_svg(&mut expr, StyleTarget::All);
         expr += r#" />"#;
         ExpandElement::RawSvg(expr)
     }

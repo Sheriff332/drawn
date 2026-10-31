@@ -12,6 +12,7 @@
 </svg>
  */
 use drawn::prelude::*;
+
 fn main() -> std::io::Result<()> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
@@ -22,7 +23,7 @@ fn main() -> std::io::Result<()> {
 
     svg.push(
         Rect::default()
-            .size(300.0, 200.0) //may add % later? IDK
+            .size(300.0, 200.0)
             .fill(Color::RED),
     );
     svg.push(

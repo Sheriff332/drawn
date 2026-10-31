@@ -15,5 +15,9 @@ impl ToPath for Rect {
         Path::default()
             .properties(self.get_properties_mut().clone())
             .M(&[self.pos.unwrap_or(Point::from(0.0, 0.0))])
+            .h(&[self.width.unwrap_or(0.0)])
+            .v(&[self.height.unwrap_or(0.0)])
+            .h(&[self.width.unwrap_or(0.0) * -1.0])
+            .z()
     }
 }
