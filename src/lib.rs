@@ -145,30 +145,30 @@ impl Svg {
             tracing::debug!("No height set, using default")
         }
         out += concat!(r#" xmlns="http://www.w3.org/2000/svg">"#, "\n");
-        let clip = self.get_clip() && self.get_id().is_some();
-        if clip {
-            tracing::info!("self contains clip; all properties of child nodes will be erased.");
-            unroll_and_erase(self);
-            tracing::info!("Skipping link checks...");
-        }
-        let linked = self.get_link().is_some() && (clip || !unroll_link_check(self));
-        if linked {
-            out += format!(
-                r#"<a href="{}"{}>"#,
-                self.get_link().unwrap().link,
-                if self.get_link().unwrap().new_tab {
-                    concat!(r#" target="_blank" rel="noopener""#, "\n")
-                } else {
-                    "\n"
-                }
-            )
-            .as_str();
-        }
-        if clip && let Some(id) = self.get_id() {
-            out += "<defs>";
-            tracing::info!("Using ID for clipPath");
-            out += format!(r#"<clipPath id="{}">"#, id).as_str();
-        }
+        // let clip = self.get_clip() && self.get_id().is_some();
+        // if clip {
+        //     tracing::info!("self contains clip; all properties of child nodes will be erased.");
+        //     unroll_and_erase(self);
+        //     tracing::info!("Skipping link checks...");
+        // }
+        // let linked = self.get_link().is_some() && (clip || !unroll_link_check(self));
+        // if linked {
+        //     out += format!(
+        //         r#"<a href="{}"{}>"#,
+        //         self.get_link().unwrap().link,
+        //         if self.get_link().unwrap().new_tab {
+        //             concat!(r#" target="_blank" rel="noopener""#, "\n")
+        //         } else {
+        //             "\n"
+        //         }
+        //     )
+        //     .as_str();
+        // }
+        // if clip && let Some(id) = self.get_id() {
+        //     out += "<defs>";
+        //     tracing::info!("Using ID for clipPath");
+        //     out += format!(r#"<clipPath id="{}">"#, id).as_str();
+        // }
         let mut properties = String::new();
         self.properties
             .to_raw_svg(&mut properties, StyleTarget::All);
@@ -187,13 +187,13 @@ impl Svg {
         if !properties.is_empty() {
             out += "</g>";
         }
-        if clip {
-            out += "</clipPath>";
-            out += "</defs>";
-        }
-        if linked {
-            out += "</a>";
-        }
+        // if clip {
+        //     out += "</clipPath>";
+        //     out += "</defs>";
+        // }
+        // if linked {
+        //     out += "</a>";
+        // }
         out += "</svg>";
         out
     }
@@ -282,25 +282,25 @@ fn unroll_into(element: &mut dyn Element, out: &mut Vec<String>, check_clip: boo
         child_linked
     }
 }
-fn unroll_link_check(element: &mut dyn Element) -> bool {
-    if let ExpandElement::Children(vec) = element.expand() {
-        for mut element in vec {
-            if element.get_link().is_some() || unroll_link_check(&mut *element) {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-fn unroll_and_erase(element: &mut dyn Element) {
-    if let ExpandElement::Children(vec) = element.expand() {
-        for mut element in vec {
-            *element.get_properties_mut() = Properties::default();
-            unroll_and_erase(&mut *element);
-        }
-    }
-}
+// fn unroll_link_check(element: &mut dyn Element) -> bool {
+//     if let ExpandElement::Children(vec) = element.expand() {
+//         for mut element in vec {
+//             if element.get_link().is_some() || unroll_link_check(&mut *element) {
+//                 return true;
+//             }
+//         }
+//     }
+//     false
+// }
+//
+// fn unroll_and_erase(element: &mut dyn Element) {
+//     if let ExpandElement::Children(vec) = element.expand() {
+//         for mut element in vec {
+//             *element.get_properties_mut() = Properties::default();
+//             unroll_and_erase(&mut *element);
+//         }
+//     }
+// }
 
 #[derive(Clone, Default)]
 pub struct Style {
