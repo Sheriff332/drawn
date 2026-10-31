@@ -94,7 +94,7 @@
 pub mod macros;
 pub mod group;
 pub mod image;
-pub mod optimizer;
+//pub mod optimizer;
 pub mod path;
 pub mod shapes;
 pub mod text;
@@ -856,7 +856,7 @@ impl Link {
 }
 
 pub(crate) type TMat = [f32; 6];
-pub(crate) const ID_MAT: TMat = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+//pub(crate) const ID_MAT: TMat = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
 #[derive(Clone)]
 pub enum Transform {
     Translate(Point),
