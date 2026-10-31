@@ -29,7 +29,11 @@ fn main() -> std::io::Result<()> {
                         .at(x, y)
                         .size(35.0, 35.0)
                         .round(6.0, 6.0)
-                        .fill(if row % 2 == 0 { Color::RED } else { Color::BLUE }),
+                        .fill(if row % 2 == 0 {
+                            Color::RED
+                        } else {
+                            Color::BLUE
+                        }),
                 );
             } else if (row + col) % 3 == 1 {
                 hive.push(
@@ -54,9 +58,7 @@ fn main() -> std::io::Result<()> {
     // 2. THE TRANSFORMED CLIP MASK
     // Tests .clip(), <defs><clipPath>, and masked rendering.
     // =========================================================================
-    let mut mask_svg = Svg::default()
-        .id("stress-mask")
-        .clip();
+    let mut mask_svg = Svg::default().id("stress-mask").clip();
 
     // The mask stencil shape (Transformed polygon + rect):
     mask_svg.push(
@@ -101,9 +103,7 @@ fn main() -> std::io::Result<()> {
             .fill(Color::BLUE),
     };
 
-    root_svg.push(
-        cluster.link("/parent-link", false),
-    );
+    root_svg.push(cluster.link("/parent-link", false));
 
     // =========================================================================
     // 4. COMPLEX BÉZIER WAVE WALL
@@ -132,11 +132,7 @@ fn main() -> std::io::Result<()> {
             .at(50.0, 1050.0)
             .font("Virgil, cursive, sans-serif")
             .font_size(28.0)
-            .push(
-                TextSpan::from("DRAWN ENGINE ")
-                    .bold()
-                    .fill(Color::BLACK),
-            )
+            .push(TextSpan::from("DRAWN ENGINE ").bold().fill(Color::BLACK))
             .push(
                 TextSpan::from("v0.2.1 ")
                     .italic()

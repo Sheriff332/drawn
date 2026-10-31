@@ -94,14 +94,13 @@
 pub mod macros;
 pub mod group;
 pub mod image;
+pub mod optimizer;
 pub mod path;
 pub mod shapes;
 pub mod text;
-pub mod optimizer;
 
 use std::fmt::{Display, Formatter};
 use std::{fs, io};
-use std::ops::Deref;
 
 #[derive(Default)]
 pub struct Svg {
@@ -131,7 +130,7 @@ impl Svg {
                 r#" viewBox="{} {} {} {}""#,
                 viewbox.0.x, viewbox.0.y, viewbox.1.x, viewbox.1.y
             )
-                .as_str();
+            .as_str();
         } else {
             tracing::debug!("No viewbox set, using default")
         }
@@ -148,9 +147,7 @@ impl Svg {
         out += concat!(r#" xmlns="http://www.w3.org/2000/svg">"#, "\n");
         let clip = self.get_clip() && self.get_id().is_some();
         if clip {
-            tracing::info!(
-                    "self contains clip; all properties of child nodes will be erased."
-                );
+            tracing::info!("self contains clip; all properties of child nodes will be erased.");
             unroll_and_erase(self);
             tracing::info!("Skipping link checks...");
         }
@@ -165,7 +162,7 @@ impl Svg {
                     "\n"
                 }
             )
-                .as_str();
+            .as_str();
         }
         if clip && let Some(id) = self.get_id() {
             out += "<defs>";
@@ -173,7 +170,8 @@ impl Svg {
             out += format!(r#"<clipPath id="{}">"#, id).as_str();
         }
         let mut properties = String::new();
-        self.properties.to_raw_svg(&mut properties, StyleTarget::All);
+        self.properties
+            .to_raw_svg(&mut properties, StyleTarget::All);
         if !properties.is_empty() {
             out += format!("<g {}>", properties).as_str();
         }
@@ -210,13 +208,12 @@ impl_properties!(Svg);
 
 impl Element for Svg {
     fn expand(&mut self) -> ExpandElement {
-        ExpandElement::Children({
-            std::mem::take(&mut self.elements)
-        })
+        ExpandElement::Children(std::mem::take(&mut self.elements))
     }
 }
 
-fn unroll_into(element: &mut dyn Element, out: &mut Vec<String>, check_clip: bool) -> bool { //return is link check
+fn unroll_into(element: &mut dyn Element, out: &mut Vec<String>, check_clip: bool) -> bool {
+    //return is link check
     let clip = element.get_clip();
     if check_clip {
         element.get_properties_mut().style = Style::default();
@@ -228,10 +225,25 @@ fn unroll_into(element: &mut dyn Element, out: &mut Vec<String>, check_clip: boo
 
     match element.expand() {
         ExpandElement::Children(vec) => {
-            let style = &element.get_properties_mut().style;
-            for mut element in vec {
-                element.get_properties_mut().style.inherit_from(style);
-                child_linked |= unroll_into(&mut *element, &mut child_lines, check_clip || clip);
+            let style = &element.get_properties_mut().style.clone();
+            for mut child_element in vec {
+                if child_element.get_properties_mut().link.is_none() {
+                    child_element.get_properties_mut().link =
+                        element.get_properties().get_link().cloned();
+                }
+                if child_element.get_properties_mut().clip_path.is_none() {
+                    child_element.get_properties_mut().clip_path =
+                        element.get_properties().get_clip_path();
+                }
+                for t in element.get_transforms() {
+                    child_element
+                        .get_properties_mut()
+                        .transforms
+                        .insert(0, t.clone());
+                }
+                child_element.get_properties_mut().style.inherit_from(style);
+                child_linked |=
+                    unroll_into(&mut *child_element, &mut child_lines, check_clip || clip);
             }
         }
         ExpandElement::RawSvg(line) => {
@@ -467,12 +479,20 @@ pub struct Properties {
 }
 
 pub trait ImplProperties {
+    fn get_properties(&self) -> &Properties;
     fn get_properties_mut(&mut self) -> &mut Properties;
     fn remove_properties(mut self) -> Self
     where
         Self: Sized,
     {
         *self.get_properties_mut() = Properties::default();
+        self
+    }
+    fn properties(mut self, properties: Properties) -> Self
+    where
+        Self: Sized,
+    {
+        *self.get_properties_mut() = properties;
         self
     }
     fn remove_style(mut self) -> Self
@@ -666,6 +686,9 @@ pub trait ImplProperties {
         self
     }
     fn remove_clip(&mut self) {}
+    fn get_clip_path(&self) -> Option<String> {
+        None
+    }
     fn clip_path(self, _element: &str) -> Self
     where
         Self: Sized,
@@ -685,6 +708,9 @@ pub trait ImplProperties {
 }
 
 impl ImplProperties for Properties {
+    fn get_properties(&self) -> &Properties {
+        self
+    }
     fn get_properties_mut(&mut self) -> &mut Properties {
         self
     }
@@ -760,10 +786,22 @@ impl Color {
     };
 
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b, a: 255, none: false }
+        Self {
+            r,
+            g,
+            b,
+            a: 255,
+            none: false,
+        }
     }
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
-        Color { r, g, b, a, none: false }
+        Color {
+            r,
+            g,
+            b,
+            a,
+            none: false,
+        }
     }
     pub fn from_hex(hex: &str) -> Option<Self> {
         let hex = hex.trim_start_matches('#');
@@ -859,6 +897,8 @@ impl Link {
     }
 }
 
+pub(crate) type TMat = [f32; 6];
+pub(crate) const ID_MAT: TMat = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
 #[derive(Clone)]
 pub enum Transform {
     Translate(Point),
@@ -866,7 +906,43 @@ pub enum Transform {
     SkewX(f32),
     SkewY(f32),
     Rotate(f32),
-    Matrix([f32; 6]),
+    Matrix(TMat),
+}
+impl Transform {
+    pub(crate) fn to_matrix(&self) -> TMat {
+        match self {
+            Transform::Translate(translate) => [1.0, 0.0, 0.0, 1.0, translate.x, translate.y],
+            Transform::Scale(scale) => [*scale, 0.0, 0.0, *scale, 0.0, 0.0],
+            Transform::SkewX(skew_x) => {
+                let r = skew_x.to_radians();
+                [1.0, 0.0, r.tan(), 1.0, 0.0, 0.0]
+            }
+            Transform::SkewY(skew_y) => {
+                let r = skew_y.to_radians();
+                [1.0, r.tan(), 0.0, 1.0, 0.0, 0.0]
+            }
+            Transform::Rotate(rotate) => {
+                let r = rotate.to_radians();
+                [r.cos(), r.sin(), -r.sin(), r.cos(), 0.0, 0.0]
+            }
+            Transform::Matrix(matrix) => *matrix,
+        }
+    }
+}
+impl std::ops::Mul<TMat> for Transform {
+    type Output = TMat;
+
+    fn mul(self, rhs: TMat) -> Self::Output {
+        let lhs = self.to_matrix();
+        [
+            (lhs[0] * rhs[0]) + (lhs[2] * rhs[1]),          // a
+            (lhs[1] * rhs[0]) + (lhs[3] * rhs[1]),          // b
+            (lhs[0] * rhs[2]) + (lhs[2] * rhs[3]),          // c
+            (lhs[1] * rhs[2]) + (lhs[3] * rhs[3]),          // d
+            (lhs[0] * rhs[4]) + (lhs[2] * rhs[5]) + lhs[4], // e
+            (lhs[1] * rhs[4]) + (lhs[3] * rhs[5]) + lhs[5], // f
+        ]
+    }
 }
 impl Display for Transform {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

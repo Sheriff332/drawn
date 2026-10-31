@@ -408,7 +408,9 @@
 <a href="/child-link" target="_blank" rel="noopener">
 <rect x="1000" y="550" width="120" height="60" fill="#ff0000ff" />
 </a>
+<a href="/parent-link">
 <rect x="1150" y="550" width="120" height="60" fill="#0000ffff" />
+</a>
 <path d="M50 700 Q250 660, 450 700 T850 700" fill="none" stroke="#0000ffff" stroke-width="3" />
 <path d="M50 725 Q250 685, 450 725 T850 725" fill="none" stroke="#0000ffff" stroke-width="3" />
 <path d="M50 750 Q250 710, 450 750 T850 750" fill="none" stroke="#0000ffff" stroke-width="3" />

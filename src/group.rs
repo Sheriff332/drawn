@@ -8,9 +8,7 @@ pub struct Group {
 
 impl Element for Group {
     fn expand(&mut self) -> ExpandElement {
-        ExpandElement::Children({
-            std::mem::take(&mut self.elements)
-        })
+        ExpandElement::Children(std::mem::take(&mut self.elements))
     }
 }
 

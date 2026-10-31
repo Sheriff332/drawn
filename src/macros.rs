@@ -2,6 +2,9 @@
 macro_rules! impl_properties {
     ($name: ident) => {
         impl ImplProperties for $name {
+            fn get_properties(&self) -> &Properties {
+                &self.properties
+            }
             fn get_properties_mut(&mut self) -> &mut Properties {
                 &mut self.properties
             }
@@ -51,15 +54,10 @@ macro_rules! impl_properties {
                 self.properties.clip = false;
             }
 
-            // fn clip_path(mut self, element: &dyn Element) -> Self
-            // where
-            //     Self: Sized,
-            // {
-            //     if let Some(id) = element.get_id() {
-            //         self.properties.clip_path = Some(id.to_string());
-            //     }
-            //     self
-            // }
+            fn get_clip_path(&self) -> Option<String> {
+                self.properties.clip_path.clone()
+            }
+
             fn clip_path(mut self, id: &str) -> Self
             where
                 Self: Sized,

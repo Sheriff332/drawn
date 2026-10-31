@@ -2,12 +2,12 @@ use crate::*;
 
 #[derive(Clone, Default)]
 pub struct Rect {
-    properties: Properties,
-    pos: Option<Point>,
-    width: Option<f32>,
-    height: Option<f32>,
-    rx: Option<f32>,
-    ry: Option<f32>,
+    pub(crate) properties: Properties,
+    pub(crate) pos: Option<Point>,
+    pub(crate) width: Option<f32>,
+    pub(crate) height: Option<f32>,
+    pub(crate) rx: Option<f32>,
+    pub(crate) ry: Option<f32>,
 }
 
 impl Rect {

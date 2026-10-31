@@ -12,9 +12,8 @@ impl ToPath for Path {
 
 impl ToPath for Rect {
     fn to_path(mut self) -> Path {
-        let propties = self.get_properties_mut().clone();
         Path::default()
-            //I need to access the fields in rect bruh...
-        //TODO: make getters for all the primitive elements
+            .properties(self.get_properties_mut().clone())
+            .M(&[self.pos.unwrap_or(Point::from(0.0, 0.0))])
     }
 }
